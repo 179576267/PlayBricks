@@ -1,16 +1,23 @@
-package com.wangzhenfei.cocos2dgame;
+package com.wangzhenfei.cocos2dgame.layer;
 
+import android.content.Context;
+import android.graphics.BitmapFactory;
+import android.util.Log;
 import android.view.MotionEvent;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.badlogic.gdx.physics.box2d.BodyDef;
+import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.EdgeShape;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
 
 import org.cocos2d.actions.UpdateCallback;
+import org.cocos2d.actions.instant.CCHide;
+import org.cocos2d.actions.instant.CCShow;
+import org.cocos2d.actions.interval.CCScaleBy;
 import org.cocos2d.config.ccMacros;
 import org.cocos2d.events.CCTouchDispatcher;
 import org.cocos2d.layers.CCLayer;
@@ -26,12 +33,10 @@ import org.cocos2d.types.ccColor3B;
 import java.util.Iterator;
 
 /**
- * Created by wangzhenfei on 2016/11/8.
+ * Created by wangzhenfei on 2016/11/7.
  */
-public class Box2DTestLayer extends CCLayer {
-    public static final int kTagTileMap = 1;
+public class Game2Layer extends CCLayer {
     public static final int kTagSpriteManager = 1;
-    public static final int kTagAnimation1 = 1;
 
     // Pixel to meters ratio. Box2D uses meters as the unit for measurement.
     // This ratio defines how many pixels correspond to 1 Box2D "meter"
@@ -39,25 +44,22 @@ public class Box2DTestLayer extends CCLayer {
     // to define the ratio so that your most common object type is 1x1 meter.
     protected static final float PTM_RATIO = 32.0f;
 
-    // Simulation space should be larger than window per Box2D recommendation.
-    protected static final float BUFFER = 1.0f;
-
     //FPS for the PhysicsWorld to sync to
-    protected static final float FPS = (float) CCDirector.sharedDirector().getAnimationInterval();
+    protected static final float FPS = (float)CCDirector.sharedDirector().getAnimationInterval();
     private static float rdelta = 0;
 
     protected final World bxWorld;
 
-    public Box2DTestLayer() {
+    public Game2Layer() {
         super();
 
         this.setIsTouchEnabled(true);
-        this.setIsAccelerometerEnabled(true);
+//        this.setIsAccelerometerEnabled(true);
 
         CGSize s = CCDirector.sharedDirector().winSize();
 
         // Define the gravity vector.
-        Vector2 gravity = new Vector2(9.8f, -9.8f);
+        Vector2 gravity = new Vector2(0f, 0f);
 
         float scaledWidth = s.width/PTM_RATIO;
         float scaledHeight = s.height/PTM_RATIO;
@@ -102,14 +104,20 @@ public class Box2DTestLayer extends CCLayer {
         groundBody.createFixture(groundBox,0);
 
         //Set up sprite
-        CCSpriteSheet mgr = CCSpriteSheet.spriteSheet("blocks.png", 150);
-        addChild(mgr, 0, kTagSpriteManager);
+//        CCSpriteSheet mgr = CCSpriteSheet.spriteSheet("blocks.png", 150);
+//        addChild(mgr, 0, kTagSpriteManager);
+
 
         addNewSpriteWithCoords(CGPoint.ccp(s.width / 2.0f, s.height / 2.0f));
+        addNewSpriteWithCoords(CGPoint.ccp(100, 100));
+        addNewSpriteWithCoords(CGPoint.ccp(200, 100));
+        addNewSpriteWithCoords(CGPoint.ccp(300, 100));
+        addNewSpriteWithCoords(CGPoint.ccp(400, 100));
+        addNewSpriteWithCoords(CGPoint.ccp(500, 100));
 
-        CCLabel label = CCLabel.makeLabel("Tap screen", "DroidSans", 32);
+        CCLabel label = CCLabel.makeLabel("好玩的游戏", "DroidSans", 32);
         label.setPosition(CGPoint.make(s.width / 2f, s.height - 50f));
-        label.setColor(new ccColor3B(0, 0, 255));
+        label.setColor(new ccColor3B(255, 255, 255));
         addChild(label);
     }
 
@@ -124,32 +132,17 @@ public class Box2DTestLayer extends CCLayer {
     @Override
     public void onEnter() {
         super.onEnter();
-
-        // start ticking (for physics simulation)
         schedule(tickCallback);
     }
 
     @Override
     public void onExit() {
         super.onExit();
-
-        // stop ticking (for physics simulation)
         unschedule(tickCallback);
     }
-
     private void addNewSpriteWithCoords(CGPoint pos) {
-        CCSpriteSheet sheet = (CCSpriteSheet) getChildByTag(kTagSpriteManager);
-
-        //We have a 64x64 sprite sheet with 4 different 32x32 images.  The following code is
-        //just randomly picking one of the images
-        int idx = (ccMacros.CCRANDOM_0_1() > .5 ? 0:1);
-        int idy = (ccMacros.CCRANDOM_0_1() > .5 ? 0:1);
-
-//    		CCSprite sprite = CCSprite.sprite("blocks.png", CGRect.make(32 * idx,32 * idy,32,32));
-//    		this.addChild(sprite);
-        CCSprite sprite = CCSprite.sprite(sheet, CGRect.make(32 * idx, 32 * idy, 32, 32));
-        sheet.addChild(sprite);
-
+        CCSprite sprite = CCSprite.sprite("app_logo.png");
+        addChild(sprite);
         sprite.setPosition(pos);
 
         // Define the dynamic body.
@@ -172,7 +165,8 @@ public class Box2DTestLayer extends CCLayer {
             FixtureDef fixtureDef = new FixtureDef();
             fixtureDef.shape = dynamicBox;
             fixtureDef.density = 1.0f;
-            fixtureDef.friction = 0.3f;
+            fixtureDef.friction = 0f;
+            fixtureDef.restitution = 1.0f;
             body.createFixture(fixtureDef);
         }
     }
@@ -210,34 +204,30 @@ public class Box2DTestLayer extends CCLayer {
         }
     }
 
+    CGPoint pointBegin;
     @Override
     public boolean ccTouchesBegan(MotionEvent event) {
-        CGPoint location = CCDirector.sharedDirector()
+        pointBegin = CCDirector.sharedDirector()
                 .convertToGL(CGPoint.make(event.getX(), event.getY()));
-
-        addNewSpriteWithCoords(location);
-
         return CCTouchDispatcher.kEventHandled;
     }
 
-    static float prevX=0, prevY=0;
-
-    Vector2 gravity = new Vector2();
-
     @Override
-    public void ccAccelerometerChanged(float accelX, float accelY, float accelZ) {
+    public boolean ccTouchesEnded(MotionEvent event) {
+        CGPoint position = CCDirector.sharedDirector()
+                .convertToGL(CGPoint.make(event.getX(), event.getY()));
+        float dx = (position.x - pointBegin.x)/ PTM_RATIO;
+        float dy = (position.y - pointBegin.y)/ PTM_RATIO;
 
-        //#define kFilterFactor 0.05f
-        float kFilterFactor  = 1.0f;	// don't use filter. the code is here just as an example
-
-        float accX = (float) accelX * kFilterFactor + (1- kFilterFactor)* prevX;
-        float accY = (float) accelY * kFilterFactor + (1- kFilterFactor)* prevY;
-
-        prevX = accX;
-        prevY = accY;
-
-        // no filtering being done in this demo (just magnify the gravity a bit)
-        gravity.set( accY * 9.8f, accX * -9.8f );
-        bxWorld.setGravity( gravity );
+        // Iterate over the bodies in the physics world
+        Iterator<Body> it = bxWorld.getBodies();
+        while(it.hasNext()) {
+            Body body = it.next();
+            Vector2 v = body.getLinearVelocity();
+            v.x += dx;
+            v.y += dy;
+            body.setLinearVelocity(v);
+        }
+        return super.ccTouchesEnded(event);
     }
 }

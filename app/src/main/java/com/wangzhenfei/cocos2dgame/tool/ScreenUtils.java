@@ -1,4 +1,4 @@
-package com.wangzhenfei.cocos2dgame;
+package com.wangzhenfei.cocos2dgame.tool;
 
 import android.app.Activity;
 import android.content.Context;
