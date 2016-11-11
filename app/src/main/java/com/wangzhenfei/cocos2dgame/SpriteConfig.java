@@ -36,7 +36,7 @@ public class SpriteConfig {
 
     //道具
     public final static int PROP_SIZE = 95;
-    public final static int TAG_PROP_1 = 14 * 1000;
-    public final static int TAG_PROP_2 = 15 * 1000;
-    public final static int TAG_PROP_3 = 16 * 1000;
+    public final static int TAG_PROP_EXPEND_LARGE = 14 * 1000;
+    public final static int TAG_PROP_MORE_BALL = 15 * 1000;
+    public final static int TAG_PROP_ACCELERATE = 16 * 1000;
 }

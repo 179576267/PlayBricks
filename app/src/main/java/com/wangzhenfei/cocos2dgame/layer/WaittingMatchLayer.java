@@ -1,5 +1,10 @@
 package com.wangzhenfei.cocos2dgame.layer;
 
+import android.util.Log;
+
+import com.wangzhenfei.cocos2dgame.model.BattleInitInfo;
+import com.wangzhenfei.cocos2dgame.socket.MsgData;
+import com.wangzhenfei.cocos2dgame.socket.MySocket;
 import com.wangzhenfei.cocos2dgame.tool.SpriteUtils;
 
 import org.cocos2d.actions.UpdateCallback;
@@ -11,6 +16,8 @@ import org.cocos2d.nodes.CCSpriteFrame;
 import org.cocos2d.nodes.CCSpriteFrameCache;
 import org.cocos2d.opengl.CCTexture2D;
 import org.cocos2d.types.CGPoint;
+
+import de.greenrobot.event.EventBus;
 
 /**
  * Created by wangzhenfei on 2016/11/9.
@@ -28,6 +35,25 @@ public class WaittingMatchLayer extends BaseCCLayer{
         super();
         this.setIsTouchEnabled(true);
         addSprite();
+        EventBus.getDefault().register(this);
+        MsgData<String> msgData = new MsgData<String>();
+        msgData.setCode(2001);
+        MySocket.getInstance().setMessage(msgData);
+    }
+
+    @Override
+    public void goToNext() {
+        CCScene scene = CCScene.node();
+        scene.addChild(layer);
+        // Make the Scene active
+        CCDirector.sharedDirector().runWithScene(scene);
+        EventBus.getDefault().unregister(this);
+    }
+
+    GameLayer layer;
+    public void onEvent(BattleInitInfo info) {
+        layer = new GameLayer(info);
+        goToNext();
     }
 
     private void addSprite() {
@@ -101,23 +127,28 @@ public class WaittingMatchLayer extends BaseCCLayer{
         }
         jumpCount++;
         if(jumpCount % 5 == 0){ // 1s
-            timeCount++;
             setNum();
-            if(timeCount == 5){
+            if(timeCount == 3){
                 CCScene scene = CCScene.node();
-                scene.addChild(new GameLayer());
+                scene.addChild(new GameLayer(new BattleInitInfo()));
                 // Make the Scene active
                 CCDirector.sharedDirector().runWithScene(scene);
+                EventBus.getDefault().unregister(this);
             }
+            if(timeCount == 30){
+                CCScene scene = CCScene.node();
+                scene.addChild(new StartPageLayer());
+                // Make the Scene active
+                CCDirector.sharedDirector().runWithScene(scene);
+                EventBus.getDefault().unregister(this);
+            }
+            timeCount++;
         }
     }
 
     private void setNum() {
         if(timeCount > 30) { // 返回
-            CCScene scene = CCScene.node();
-            scene.addChild(new StartPageLayer());
-            // Make the Scene active
-            CCDirector.sharedDirector().runWithScene(scene);
+            goToNext();
         }
         int ten = timeCount / 10;
         int ge = timeCount % 10;

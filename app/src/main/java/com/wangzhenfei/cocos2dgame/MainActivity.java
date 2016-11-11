@@ -6,6 +6,8 @@ import android.view.Window;
 import android.view.WindowManager;
 
 import com.wangzhenfei.cocos2dgame.layer.StartPageLayer;
+import com.wangzhenfei.cocos2dgame.socket.MsgData;
+import com.wangzhenfei.cocos2dgame.socket.MySocket;
 
 import org.cocos2d.layers.CCScene;
 import org.cocos2d.nodes.CCDirector;

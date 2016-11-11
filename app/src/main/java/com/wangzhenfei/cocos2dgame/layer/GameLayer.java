@@ -16,6 +16,8 @@ import com.badlogic.gdx.physics.box2d.Manifold;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
 import com.wangzhenfei.cocos2dgame.SpriteConfig;
+import com.wangzhenfei.cocos2dgame.model.BattleInitInfo;
+import com.wangzhenfei.cocos2dgame.model.UserInfo;
 import com.wangzhenfei.cocos2dgame.tool.SpriteUtils;
 
 import org.cocos2d.actions.UpdateCallback;
@@ -26,6 +28,8 @@ import org.cocos2d.types.CGPoint;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
+import de.greenrobot.event.EventBus;
 
 /**
  * Created by wangzhenfei on 2016/11/9.
@@ -48,8 +52,24 @@ public class GameLayer extends BaseCCLayer{
     // 球的集合
     private List<Integer> balls = new ArrayList<Integer>();
 
+    private int acclerate = 0;
+    private int ACCLERATR_RAT = 1300;
+    private BattleInitInfo.InitBatterBean myBatter;
+    private BattleInitInfo.InitBatterBean offsetBatter;
+
     public GameLayer() {
+    }
+
+    public GameLayer(BattleInitInfo info) {
         super();
+        if(UserInfo.info.getId() == info.getInitiativeUser().getId()){
+            myBatter = info.getInitiativeUser();
+            offsetBatter = info.getPassivityUser();
+        }else {
+            myBatter = info.getPassivityUser();
+            offsetBatter = info.getInitiativeUser();
+        }
+        EventBus.getDefault().register(this);
         this.setIsTouchEnabled(true);
         integers.add(10);
         integers.add(12);
@@ -111,11 +131,26 @@ public class GameLayer extends BaseCCLayer{
         addSprite();
     }
 
+    @Override
+    public void goToNext() {
+        EventBus.getDefault().unregister(this);
+    }
+    public void onEvent(String info) {
+
+    }
     private void dealContact(Body body, int tag) {
         CCSprite sprite = (CCSprite) body.getUserData();
         if(tag < 1000 && tag > -1){ // 是砖块的碰撞
             if(integers.contains(tag - SpriteConfig.OFFSET_BRICK_AND_BG)){ // 击中道具
-                CCSprite spProp = SpriteUtils.getSprite("marbles_prop_02.png",SpriteConfig.PROP_SIZE, SpriteConfig.PROP_SIZE,false, SpriteConfig.TAG_PROP_1);
+                int specialTag = tag - SpriteConfig.OFFSET_BRICK_AND_BG;
+                CCSprite spProp;
+                if(specialTag == integers.get(0)){
+                    spProp = SpriteUtils.getSprite("marbles_prop_01.png",SpriteConfig.PROP_SIZE, SpriteConfig.PROP_SIZE,false, SpriteConfig.TAG_PROP_EXPEND_LARGE);
+                }else if(specialTag == integers.get(1)){
+                    spProp = SpriteUtils.getSprite("marbles_prop_02.png",SpriteConfig.PROP_SIZE, SpriteConfig.PROP_SIZE,false, SpriteConfig.TAG_PROP_MORE_BALL);
+                }else {
+                    spProp = SpriteUtils.getSprite("marbles_prop_03.png",SpriteConfig.PROP_SIZE, SpriteConfig.PROP_SIZE,false, SpriteConfig.TAG_PROP_ACCELERATE);
+                }
                 spProp.setPosition(sprite.getPosition());
                 this.addChild(spProp);
 //                spProp.runAction(CCMoveTo.action(3, CGPoint.ccp(sprite.getPosition().x, -100)));
@@ -176,7 +211,7 @@ public class GameLayer extends BaseCCLayer{
         addBg();
         addOffsetHome();
         addMyHome();
-        addBalls(SpriteConfig.TAG_NORMAL_BALL);
+//        addBalls(SpriteConfig.TAG_NORMAL_BALL);
     }
 
     private void addMyHome() {
@@ -184,7 +219,7 @@ public class GameLayer extends BaseCCLayer{
         CCSprite brickBg;
         CCSprite brick;
         for(int i = 0; i < 6; i++){
-            kk: for(int j = 0; j < 3 ;j++){
+            kk: for(int j = 2; j > -1  ;j--){
                 if((j == 0 && i == 2) ||
                         (j == 0 && i == 3) ||
                         (j == 1 && i == 2) ||
@@ -196,7 +231,6 @@ public class GameLayer extends BaseCCLayer{
                 }else {
                     brickBg = SpriteUtils.getSprite("marbles_gem_base_02.png", SpriteConfig.NORMAL_BRICK_SIZE, SpriteConfig.NORMAL_BRICK_SIZE, false, SpriteConfig.TAG_NROMAL_BRICK);
                 }
-
                 if((i==1 && j==0)  ||
                         (i == 1 && j == 2) ||
                         (i == 4 && j == 1) ){
@@ -255,7 +289,7 @@ public class GameLayer extends BaseCCLayer{
         bodyDef.type = BodyDef.BodyType.DynamicBody;
         bodyDef.position.set(ballPoint.x / PTM_RATIO, ballPoint.y / PTM_RATIO);
         CircleShape dynamicBox = new CircleShape();
-        dynamicBox.setRadius(SpriteConfig.BALL_SIZE/2/PTM_RATIO);//These are mid points for our 1m box
+        dynamicBox.setRadius(SpriteConfig.BALL_SIZE / 2 / PTM_RATIO);//These are mid points for our 1m box
         Body body = bxWorld.createBody(bodyDef);
         body.setUserData(ball);
         FixtureDef fixtureDef = new FixtureDef();
@@ -265,14 +299,15 @@ public class GameLayer extends BaseCCLayer{
         fixtureDef.restitution = 1.0f;
         body.createFixture(fixtureDef);
 
-        Vector2 v = body.getLinearVelocity();
+        int forceX = 0;
+        int forceY = 0;
         if(tag == SpriteConfig.TAG_ADD_BALL1){
-            v.x -= 10;
+            forceX = 500;
         }else {
-            v.x += 10;
+            forceX += 500;
         }
-        v.y += 30;
-        body.setLinearVelocity(v);
+        forceY += 1500;
+        body.applyForceToCenter(forceX, forceY);
     }
 
 
@@ -281,7 +316,7 @@ public class GameLayer extends BaseCCLayer{
         CCSprite brickBg;
         CCSprite brick;
         for(int i = 0; i < 6; i++){
-           kk: for(int j = 0; j < 3 ;j++){
+           kk: for(int j = 2; j > -1 ;j--){
                 if((j == 0 && i == 2) ||
                         (j == 0 && i == 3) ||
                         (j == 1 && i == 2) ||
@@ -302,7 +337,7 @@ public class GameLayer extends BaseCCLayer{
                     brick = SpriteUtils.getSprite("marbles_gem_green.png", SpriteConfig.NORMAL_BRICK_SIZE, SpriteConfig.NORMAL_BRICK_SIZE, false, i * 10 + j);
 //                   brickBg.setTag(SpriteConfig.TAG_NROMAL_BRICK);
                }
-               CGPoint point = CGPoint.ccp(screenWith / 2 - SpriteConfig.NORMAL_BRICK_SIZE * (3 - i) + SpriteConfig.NORMAL_BRICK_SIZE / 2,
+               CGPoint point = CGPoint.ccp(screenWith / 2 - SpriteConfig.NORMAL_BRICK_SIZE * (i - 3) - SpriteConfig.NORMAL_BRICK_SIZE / 2,
                        screenHeight - (SpriteConfig.NORMAL_BRICK_SIZE / 2 + j * SpriteConfig.NORMAL_BRICK_SIZE));
                brick.setPosition(point);
                brickBg.setPosition(point);
@@ -355,6 +390,8 @@ public class GameLayer extends BaseCCLayer{
         schedule(tickCallback);
     }
 
+
+
     @Override
     public void onExit() {
         super.onExit();
@@ -391,11 +428,40 @@ public class GameLayer extends BaseCCLayer{
                 if(balls.contains(sprite.getTag())){ // 球的运动
                     sprite.setPosition(pos.x * PTM_RATIO, pos.y * PTM_RATIO);
                     Vector2 linearVelocity = b.getLinearVelocity();
+
                     if(linearVelocity.y == 0){
-                        linearVelocity.y = 10;
+                        b.applyForceToCenter(0,20);
                     }
-                    b.setLinearVelocity(linearVelocity);
-//                    myControlBar.setPosition(pos.x * PTM_RATIO, pos.y * PTM_RATIO);
+                    int forceX = 0;
+                    int forceY = 0;
+                    if(acclerate != 0){
+                        if(acclerate > 0){ // 加速
+                            if(linearVelocity.x > 0){
+                                forceX = acclerate;
+                            }else {
+                                forceX = -acclerate;
+                            }
+
+                            if(linearVelocity.y > 0){
+                                forceY = acclerate;
+                            }else {
+                                forceY = - acclerate;
+                            }
+                        }else { // 减速
+                            if(linearVelocity.x > 0){
+                                forceX = -acclerate;
+                            }else {
+                                forceX = acclerate;
+                            }
+
+                            if(linearVelocity.y > 0){
+                                forceY = - acclerate;
+                            }else {
+                                forceY =  acclerate;
+                            }
+                        }
+                        b.applyForceToCenter(forceX,forceY);
+                    }
                 }
             }else if(userData != null && userData instanceof GameLayer){ // 销毁
                 bxWorld.destroyBody(b);
@@ -408,25 +474,118 @@ public class GameLayer extends BaseCCLayer{
      * 接住道具
      */
     private void catchProp() {
-        CCSprite prop = (CCSprite) this.getChildByTag(SpriteConfig.TAG_PROP_1);
-        if(prop != null){
+        CCSprite prop1 = (CCSprite) this.getChildByTag(SpriteConfig.TAG_PROP_EXPEND_LARGE);
+        CCSprite prop2 = (CCSprite) this.getChildByTag(SpriteConfig.TAG_PROP_MORE_BALL);
+        CCSprite prop3 = (CCSprite) this.getChildByTag(SpriteConfig.TAG_PROP_ACCELERATE);
+        if(prop1 != null){
             //判断是否接住
             if(SpriteUtils.isSpriteConfict(myControlBar, SpriteConfig.NORMAL_CONTROL_BAR_W, SpriteConfig.NORMAL_CONTROL_BAR_H,
-                    prop, SpriteConfig.PROP_SIZE, SpriteConfig.PROP_SIZE)){
+                    prop1, SpriteConfig.PROP_SIZE, SpriteConfig.PROP_SIZE)){
                 Log.i(TAG, "接住");
-                prop.removeSelf();
-                addBalls(SpriteConfig.TAG_ADD_BALL1);
-                addBalls(SpriteConfig.TAG_ADD_BALL2);
+                prop1.removeSelf();
+               // 横杆变大
+                schedule("expendLager", 1);
             }
-            CGPoint point = prop.getPosition();
+            CGPoint point = prop1.getPosition();
             point.y = point.y-10;
-            prop.setPosition(point);
+            prop1.setPosition(point);
             Log.i(TAG, point.toString());
             if(point.y < -100){
-                prop.removeSelf();
+                prop1.removeSelf();
+            }
+        }
+
+        if(prop2 != null){
+            //判断是否接住
+            if(SpriteUtils.isSpriteConfict(myControlBar, SpriteConfig.NORMAL_CONTROL_BAR_W, SpriteConfig.NORMAL_CONTROL_BAR_H,
+                    prop2, SpriteConfig.PROP_SIZE, SpriteConfig.PROP_SIZE)){
+                Log.i(TAG, "接住");
+                prop2.removeSelf();
+                // 多球
+                addBalls(SpriteConfig.TAG_ADD_BALL1);
+                addBalls(SpriteConfig.TAG_ADD_BALL2);
+                schedule("moreBall", 1);
+            }
+            CGPoint point = prop2.getPosition();
+            point.y = point.y-10;
+            prop2.setPosition(point);
+            Log.i(TAG, point.toString());
+            if(point.y < -100){
+                prop2.removeSelf();
+            }
+        }
+
+        if(prop3 != null){
+            //判断是否接住
+            if(SpriteUtils.isSpriteConfict(myControlBar, SpriteConfig.NORMAL_CONTROL_BAR_W, SpriteConfig.NORMAL_CONTROL_BAR_H,
+                    prop3, SpriteConfig.PROP_SIZE, SpriteConfig.PROP_SIZE)){
+                Log.i(TAG, "接住");
+                prop3.removeSelf();
+                // 加速
+                acclerate = ACCLERATR_RAT;
+                schedule("acclerate", 1);
+            }
+            CGPoint point = prop3.getPosition();
+            point.y = point.y-10;
+            prop3.setPosition(point);
+            Log.i(TAG, point.toString());
+            if(point.y < -100){
+                prop3.removeSelf();
             }
         }
     }
+
+    // ***************************道具持续的时间***************************************************
+    private int expendLagerSecond = 0;
+    public void expendLager(float dx){
+        expendLagerSecond ++;
+        if(expendLagerSecond > 10){ // 结束道具
+            expendLagerSecond = 0;
+            unschedule("expendLager");
+        }
+    }
+
+    private int moreBallSecond = 0;
+    public void moreBall(float dx){
+        moreBallSecond ++;
+        if(moreBallSecond > 10){ // 结束道具
+            moreBallSecond = 0;
+            unschedule("moreBall");
+            CCSprite ball1 = (CCSprite) this.getChildByTag(SpriteConfig.TAG_ADD_BALL1);
+            CCSprite ball2 = (CCSprite) this.getChildByTag(SpriteConfig.TAG_ADD_BALL2);
+            if(ball1 != null && ball2 != null){
+                Iterator<Body> it = bxWorld.getBodies();
+                while(it.hasNext()) {
+                    Body b = it.next();
+                    Object userData = b.getUserData();
+                    if (userData != null && userData instanceof CCSprite) {
+                        CCSprite sprite = (CCSprite)userData;
+                            if(sprite.getTag() == ball1.getTag()){
+                                ball1.removeSelf();
+                                b.setUserData(new GameLayer());
+                            }else if(sprite.getTag() == ball2.getTag()){
+                                ball2.removeSelf();
+                                b.setUserData(new GameLayer());
+                            }
+                        }
+                    }
+
+            }
+
+        }
+    }
+
+    private int acclerateSecond = 0;
+    public void acclerate(float dx){
+        acclerateSecond ++;
+        if(acclerateSecond > 10){ // 结束道具
+            acclerateSecond = 0;
+            unschedule("acclerate");
+            acclerate = - ACCLERATR_RAT;
+        }
+    }
+    // ***************************道具持续的时间***************************************************
+
 
     /**
      * 添加到世界中

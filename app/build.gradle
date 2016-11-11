@@ -5,6 +5,7 @@ android {
     buildToolsVersion "23.0.1"
 
     defaultConfig {
+        multiDexEnabled true
         applicationId "com.wangzhenfei.cocos2dgame"
         minSdkVersion 15
         targetSdkVersion 19
@@ -22,5 +23,8 @@ android {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
-    compile files('libs/cocos2d-android.jar')
+    // eventBus 替代广播
+    compile 'de.greenrobot:eventbus:2.4.0'
+    compile 'com.google.code.gson:gson:2.7'
+    compile files('libs/netty-all-5.0.0.Alpha2.jar')
 }

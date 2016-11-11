@@ -23,6 +23,15 @@ public class StartPageLayer extends BaseCCLayer{
         this.setIsTouchEnabled(true);
         addSprite();
     }
+
+    @Override
+    public void goToNext() {
+        CCScene scene = CCScene.node();
+        scene.addChild(new WaittingMatchLayer());
+        // Make the Scene active
+        CCDirector.sharedDirector().runWithScene(scene);
+    }
+
     CCSprite startButtonUp;
     CCSprite startButtonDown;
     private void addSprite() {
@@ -67,10 +76,7 @@ public class StartPageLayer extends BaseCCLayer{
     public boolean ccTouchesEnded(MotionEvent event) {
         startButtonUp.runAction(CCShow.action());
         startButtonDown.runAction(CCHide.action());
-        CCScene scene = CCScene.node();
-        scene.addChild(new WaittingMatchLayer());
-        // Make the Scene active
-        CCDirector.sharedDirector().runWithScene(scene);
+       goToNext();
         return super.ccTouchesEnded(event);
     }
 }
