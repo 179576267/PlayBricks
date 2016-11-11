@@ -221,7 +221,7 @@ public class GameLayer extends BaseCCLayer{
 
 
         //添加杆子
-        myControlBar = SpriteUtils.getSprite("marbles_baffle.png", SpriteConfig.NORMAL_CONTROL_BAR_W, SpriteConfig.NORMAL_CONTROL_BAR_H, false, SpriteConfig.TAG_OFFSET_NORMAL_CONTROL_BAR);
+        myControlBar = SpriteUtils.getSprite("marbles_baffle.png", SpriteConfig.NORMAL_CONTROL_BAR_W, SpriteConfig.NORMAL_CONTROL_BAR_H, false, SpriteConfig.TAG_MY_NORMAL_CONTROL_BAR);
         CGPoint ccp = CGPoint.ccp(screenWith / 2, SpriteConfig.NORMAL_CONTROL_BAR_H / 2 + SpriteConfig.NORMAL_BRICK_SIZE * 3 + 10);
         myControlBar.setPosition(ccp);
         this.addChild(myControlBar);
@@ -374,7 +374,7 @@ public class GameLayer extends BaseCCLayer{
             bxWorld.step(FPS, 8, 1);
         }
         
-        getProp();
+        catchProp();
 
         rdelta = 0;
 
@@ -404,7 +404,10 @@ public class GameLayer extends BaseCCLayer{
 //        ContactListener
     }
 
-    private void getProp() {
+    /**
+     * 接住道具
+     */
+    private void catchProp() {
         CCSprite prop = (CCSprite) this.getChildByTag(SpriteConfig.TAG_PROP_1);
         if(prop != null){
             //判断是否接住
