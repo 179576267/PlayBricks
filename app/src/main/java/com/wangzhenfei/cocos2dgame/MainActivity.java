@@ -26,7 +26,7 @@ public class MainActivity extends Activity {
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
+        long id = Thread.currentThread().getId();
         mGLSurfaceView = new CCGLSurfaceView(this);
         CCDirector director = CCDirector.sharedDirector();
         director.attachInView(mGLSurfaceView);
@@ -36,7 +36,6 @@ public class MainActivity extends Activity {
 
         // show FPS
         CCDirector.sharedDirector().setDisplayFPS(true);
-
         // frames per second
         CCDirector.sharedDirector().setAnimationInterval(1.0f / 30.0f);
 

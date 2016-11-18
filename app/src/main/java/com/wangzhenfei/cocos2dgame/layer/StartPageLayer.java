@@ -21,11 +21,13 @@ public class StartPageLayer extends BaseCCLayer{
     public StartPageLayer() {
         super();
         this.setIsTouchEnabled(true);
+
         addSprite();
     }
 
     @Override
     public void goToNext() {
+        long id = Thread.currentThread().getId();
         CCScene scene = CCScene.node();
         scene.addChild(new WaittingMatchLayer());
         // Make the Scene active

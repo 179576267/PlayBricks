@@ -1,0 +1,136 @@
+{
+ 		"initiativeUser" : {
+ 			"id" : 1005,
+ 			"name" : "hoodle_1005",
+ 			"avatar" : "hoodle_1005",
+ 			"blockList" : [{
+ 					"id" : 101,
+ 					"type" : 0,
+ 					"propType" : 0
+ 				}, {
+ 					"id" : 102,
+ 					"type" : 0,
+ 					"propType" : 0
+ 				}, {
+ 					"id" : 103,
+ 					"type" : 0,
+ 					"propType" : 0
+ 				}, {
+ 					"id" : 104,
+ 					"type" : 0,
+ 					"propType" : 0
+ 				}, {
+ 					"id" : 105,
+ 					"type" : 0,
+ 					"propType" : 0
+ 				}, {
+ 					"id" : 106,
+ 					"type" : 0,
+ 					"propType" : 0
+ 				}, {
+ 					"id" : 107,
+ 					"type" : 0,
+ 					"propType" : 3
+ 				}, {
+ 					"id" : 108,
+ 					"type" : 0,
+ 					"propType" : 1
+ 				}, {
+ 					"id" : 109,
+ 					"type" : 0,
+ 					"propType" : 2
+ 				}, {
+ 					"id" : 110,
+ 					"type" : 0,
+ 					"propType" : 0
+ 				}, {
+ 					"id" : 111,
+ 					"type" : 0,
+ 					"propType" : 0
+ 				}, {
+ 					"id" : 112,
+ 					"type" : 0,
+ 					"propType" : 0
+ 				}, {
+ 					"id" : 113,
+ 					"type" : 0,
+ 					"propType" : 0
+ 				}, {
+ 					"id" : 114,
+ 					"type" : 0,
+ 					"propType" : 0
+ 				}, {
+ 					"id" : 100,
+ 					"type" : 0,
+ 					"propType" : 0
+ 				}
+ 			]
+ 		},
+ 		"passivityUser" : {
+ 			"id" : 1002,
+ 			"name" : "hoodle_1002",
+ 			"avatar" : "hoodle_1002",
+ 			"blockList" : [{
+ 					"id" : 201,
+ 					"type" : 0,
+ 					"propType" : 0
+ 				}, {
+ 					"id" : 202,
+ 					"type" : 0,
+ 					"propType" : 0
+ 				}, {
+ 					"id" : 203,
+ 					"type" : 0,
+ 					"propType" : 0
+ 				}, {
+ 					"id" : 204,
+ 					"type" : 0,
+ 					"propType" : 3
+ 				}, {
+ 					"id" : 205,
+ 					"type" : 0,
+ 					"propType" : 0
+ 				}, {
+ 					"id" : 206,
+ 					"type" : 0,
+ 					"propType" : 0
+ 				}, {
+ 					"id" : 207,
+ 					"type" : 0,
+ 					"propType" : 0
+ 				}, {
+ 					"id" : 208,
+ 					"type" : 0,
+ 					"propType" : 0
+ 				}, {
+ 					"id" : 209,
+ 					"type" : 0,
+ 					"propType" : 2
+ 				}, {
+ 					"id" : 210,
+ 					"type" : 0,
+ 					"propType" : 0
+ 				}, {
+ 					"id" : 211,
+ 					"type" : 0,
+ 					"propType" : 1
+ 				}, {
+ 					"id" : 212,
+ 					"type" : 0,
+ 					"propType" : 0
+ 				}, {
+ 					"id" : 213,
+ 					"type" : 0,
+ 					"propType" : 0
+ 				}, {
+ 					"id" : 214,
+ 					"type" : 0,
+ 					"propType" : 0
+ 				}, {
+ 					"id" : 200,
+ 					"type" : 0,
+ 					"propType" : 0
+ 				}
+ 			]
+ 		}
+ 	}

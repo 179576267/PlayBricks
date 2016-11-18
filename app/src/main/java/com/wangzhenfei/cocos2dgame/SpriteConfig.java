@@ -20,6 +20,8 @@ public class SpriteConfig {
 
     // 普通横杆
     public final static int NORMAL_CONTROL_BAR_W = 213;
+    public final static int EXPEND_CONTROL_BAR_W = (int) (213 * 1.5);
+    public  static int CONTROL_BAR_W = NORMAL_CONTROL_BAR_W;
     public final static int NORMAL_CONTROL_BAR_H = 48;
 
     public final static int TAG_MY_NORMAL_CONTROL_BAR = 9 * 1000;

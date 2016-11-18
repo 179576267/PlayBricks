@@ -18,6 +18,8 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.codec.LengthFieldPrepender;
 
 /**
  * Created by wangzhenfei on 2016/11/11.
@@ -43,14 +45,15 @@ public class MySocket {
                     bootstrap.channel(NioSocketChannel.class);
                     bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
                     bootstrap.group(eventLoopGroup);
-                    bootstrap.remoteAddress(CODE.IP, CODE.PORT);
+                    bootstrap.remoteAddress(RequestCode.IP, RequestCode.PORT);
                     bootstrap.handler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel socketChannel)
                                 throws Exception {
 
                             ChannelPipeline pipe = socketChannel.pipeline();
-//                    pipe.addLast(new LengthFieldBasedFrameDecoder(1024,0,4,0,4));
+                    pipe.addLast(new LengthFieldBasedFrameDecoder(1024 * 10,0,4,0,4));
+                            pipe.addLast(new LengthFieldPrepender(4, false));
 //                    pipe.addLast(new StringDecoder());
 
                             // 基于指定字符串【换行符，这样功能等同于LineBasedFrameDecoder】
@@ -65,7 +68,7 @@ public class MySocket {
                             pipe.addLast(new NettyClientHandler());
                         }
                     });
-                    ChannelFuture future = bootstrap.connect(CODE.IP, CODE.PORT).sync();
+                    ChannelFuture future = bootstrap.connect(RequestCode.IP, RequestCode.PORT).sync();
 
                     if (future.isSuccess()) {
                         socketChannel = (SocketChannel) future.channel();
@@ -93,6 +96,7 @@ public class MySocket {
 
     //*********************************api*************************************************
     public void setMessage(Object s){
+        Log.i(TAG, s.toString());
         if(socketChannel != null){
             ChannelFuture future = null;
             try {

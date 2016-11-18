@@ -21,5 +21,7 @@ public abstract class BaseCCLayer extends CCLayer{
         screenHeight = size.getHeight();
     }
 
-    public abstract void goToNext();
+    public void goToNext(){
+        this.cleanup();
+    }
 }

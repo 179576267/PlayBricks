@@ -1,9 +1,18 @@
 package com.wangzhenfei.cocos2dgame.tool;
 
+import com.wangzhenfei.cocos2dgame.GameApplication;
+import com.wangzhenfei.cocos2dgame.model.BattleInitInfo;
+
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 
+import de.greenrobot.event.EventBus;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
@@ -69,5 +78,53 @@ public class Utils {
         pingMessage.writeBytes(req);
 
         return pingMessage;
+    }
+
+    /**
+     * 读取assets/citys.txt
+     *
+     * @return
+     */
+    public static BattleInitInfo readTestJson() {
+        try {
+            InputStream inputStream = GameApplication.getAppInstance().getAssets().open("testJson");
+            String result = convertStreamToString(inputStream);
+            BattleInitInfo info = JsonUtils.fromJSON(BattleInitInfo.class, result);
+            return info;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /**
+     * 描述：从输入流中获得String.
+     * @param is 输入流
+     * @return 获得的String
+     */
+    public static String convertStreamToString(InputStream is) {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        StringBuilder sb = new StringBuilder();
+        String line = null;
+        try {
+            while ((line = reader.readLine()) != null) {
+                sb.append(line + "\n");
+            }
+
+            //最后一个\n删除
+            if(sb.indexOf("\n")!=-1 && sb.lastIndexOf("\n") == sb.length()-1){
+                sb.delete(sb.lastIndexOf("\n"), sb.lastIndexOf("\n")+1);
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                is.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return sb.toString();
     }
 }

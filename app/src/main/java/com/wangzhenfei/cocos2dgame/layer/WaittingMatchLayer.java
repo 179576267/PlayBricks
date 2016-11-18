@@ -1,8 +1,13 @@
 package com.wangzhenfei.cocos2dgame.layer;
 
-import android.util.Log;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Looper;
+import android.os.Message;
 
 import com.wangzhenfei.cocos2dgame.model.BattleInitInfo;
+import com.wangzhenfei.cocos2dgame.model.UserInfo;
+import com.wangzhenfei.cocos2dgame.socket.RequestCode;
 import com.wangzhenfei.cocos2dgame.socket.MsgData;
 import com.wangzhenfei.cocos2dgame.socket.MySocket;
 import com.wangzhenfei.cocos2dgame.tool.SpriteUtils;
@@ -12,9 +17,6 @@ import org.cocos2d.actions.interval.CCJumpTo;
 import org.cocos2d.layers.CCScene;
 import org.cocos2d.nodes.CCDirector;
 import org.cocos2d.nodes.CCSprite;
-import org.cocos2d.nodes.CCSpriteFrame;
-import org.cocos2d.nodes.CCSpriteFrameCache;
-import org.cocos2d.opengl.CCTexture2D;
 import org.cocos2d.types.CGPoint;
 
 import de.greenrobot.event.EventBus;
@@ -37,23 +39,31 @@ public class WaittingMatchLayer extends BaseCCLayer{
         addSprite();
         EventBus.getDefault().register(this);
         MsgData<String> msgData = new MsgData<String>();
-        msgData.setCode(2001);
+        msgData.setCode(RequestCode.BATTLE_START);
         MySocket.getInstance().setMessage(msgData);
     }
 
     @Override
     public void goToNext() {
+        super.goToNext();
+        long id = Thread.currentThread().getId();
         CCScene scene = CCScene.node();
+        BaseCCLayer layer = null;
+        if(info.getInitiativeUser().getId() == UserInfo.info.getId()){ // 自己主动
+            layer = new GameLayer(info);
+        }else {
+            layer = new GameProjectionLayer(info);
+        }
         scene.addChild(layer);
         // Make the Scene active
-        CCDirector.sharedDirector().runWithScene(scene);
+        CCDirector.sharedDirector().replaceScene(scene);
         EventBus.getDefault().unregister(this);
     }
 
-    GameLayer layer;
+    BattleInitInfo info;
     public void onEvent(BattleInitInfo info) {
-        layer = new GameLayer(info);
-        goToNext();
+        long id = Thread.currentThread().getId();
+        this.info = info;
     }
 
     private void addSprite() {
@@ -109,6 +119,9 @@ public class WaittingMatchLayer extends BaseCCLayer{
     };
 
     private void tick(float d) {
+    if(info != null){
+        goToNext();
+    }
         int r = jumpCount % 3;
         CCJumpTo jumpTo;
         switch (r){
@@ -128,11 +141,13 @@ public class WaittingMatchLayer extends BaseCCLayer{
         jumpCount++;
         if(jumpCount % 5 == 0){ // 1s
             setNum();
-            if(timeCount == 3){
+
+            if(timeCount == 5){
+                long id = Thread.currentThread().getId();
                 CCScene scene = CCScene.node();
-                scene.addChild(new GameLayer(new BattleInitInfo()));
+                scene.addChild(new GameLayer(null));
                 // Make the Scene active
-                CCDirector.sharedDirector().runWithScene(scene);
+                CCDirector.sharedDirector().replaceScene(scene);
                 EventBus.getDefault().unregister(this);
             }
             if(timeCount == 30){

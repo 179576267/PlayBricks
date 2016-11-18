@@ -2,8 +2,9 @@ package com.wangzhenfei.cocos2dgame.socket;
 
 /**
  * Created by wangzhenfei on 2016/11/11.
+ * 请求参数
  */
-public class CODE {
+public class RequestCode {
     public final static String IP = "192.168.2.121";
     public final static int PORT = 2817;
 
@@ -23,24 +24,20 @@ public class CODE {
     public final static int BATTLE_START = 2001;
 
     /**
-     * 战斗数据通知
+     * 战斗数据(球的运动轨迹)
      */
-    public final static int BATTLE_DATA_NOTIFY = 2002;
+    public final static int BATTLE_DATA_BALL = 2002;
+    /**
+     * 战斗数据(横条的运动轨迹)
+     */
+    public final static int BATTLE_DATA_STICK = 2003;
+    /**
+     * 战斗数据(碰撞)
+     */
+    public final static int BATTLE_DATA_BUMP = 2004;
 
     /**
      * 战斗结束
      */
-    public final static int BATTLE_END = 2003;
-
-
-    /**
-     * 错误消息
-     */
-    public final static int ERROR_MSG = 9999;
-
-    /**
-     * 提示消息
-     */
-    public final static int INFO_MSG = 8888;
-
+    public final static int BATTLE_END = 2005;
 }
