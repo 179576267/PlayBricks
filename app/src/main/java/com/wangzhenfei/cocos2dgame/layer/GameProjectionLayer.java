@@ -1,6 +1,8 @@
 package com.wangzhenfei.cocos2dgame.layer;
 
-import android.util.Log;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Message;
 import android.view.MotionEvent;
 
 import com.badlogic.gdx.math.Vector2;
@@ -9,7 +11,6 @@ import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.EdgeShape;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
-import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
 import com.wangzhenfei.cocos2dgame.SpriteConfig;
 import com.wangzhenfei.cocos2dgame.model.BattleBall;
@@ -23,7 +24,6 @@ import com.wangzhenfei.cocos2dgame.socket.RequestCode;
 import com.wangzhenfei.cocos2dgame.tool.SpriteUtils;
 
 import org.cocos2d.actions.UpdateCallback;
-import org.cocos2d.actions.interval.CCMoveTo;
 import org.cocos2d.nodes.CCDirector;
 import org.cocos2d.nodes.CCSprite;
 import org.cocos2d.types.CGPoint;
@@ -42,16 +42,37 @@ public class GameProjectionLayer extends BaseCCLayer{
     private World bxWorld = null;
     protected static final float FPS = (float)CCDirector.sharedDirector().getAnimationInterval();
     private static float rdelta = 0;
+    private long time = 0;
     CCSprite ball;
     private Body ballBody;
     private BattleInitInfo.InitiativeUserBean myBatter;
     private BattleInitInfo.InitiativeUserBean offsetBatter;
+    private Vector2 direction;
 
     // 自己的
     private CCSprite myControlBar;
 
     // 别人的
     private CCSprite offsetControlBar;
+
+    HandlerThread callHandlerThread = new HandlerThread("callHandlerThread");
+    { callHandlerThread.start(); }
+    private boolean start;
+    protected Handler handler = new Handler(callHandlerThread.getLooper()) {
+        @Override
+        public void handleMessage(Message msg) {
+//            int forceX = 0;
+//            int forceY = 0;
+//            forceX = 100;
+//            forceY += 300;
+//            ballBody.applyForceToCenter(forceX, forceY);
+            Vector2 vector2 = new Vector2();
+            vector2.x = -10;
+            vector2.y = -10;
+            ballBody.setLinearVelocity(vector2);
+            start = true;
+        }
+    };
     public GameProjectionLayer(BattleInitInfo info) {
         super();
         Vector2 gravity = new Vector2(0f, 0f);
@@ -67,6 +88,7 @@ public class GameProjectionLayer extends BaseCCLayer{
             myBatter = info.getPassivityUser();
             offsetBatter = info.getInitiativeUser();
         }
+        handler.sendEmptyMessageDelayed(0, 5000);
         addSprite();
     }
 
@@ -81,12 +103,22 @@ public class GameProjectionLayer extends BaseCCLayer{
      */
     public void onEvent( BattleBall infos) {
         if(infos != null){
-                ball.setPosition(CGPoint.ccp((1 - infos.getLocation().getX()) * screenWith,
-                        (1 - infos.getLocation().getY()) * screenHeight));
-            Vector2 linearVelocity = new Vector2();
-            linearVelocity.x = - infos.getLocation().getVx();
-            linearVelocity.y = - infos.getLocation().getVy();
-            ballBody.setLinearVelocity(linearVelocity);
+//            CGPoint point = CGPoint.ccp((1 - infos.getLocation().getX()) * screenWith,
+//                    (1 - infos.getLocation().getY()) * screenHeight);
+//            ball.setPosition(point);
+//            Vector2 linearVelocity = new Vector2();
+//            linearVelocity.x = - infos.getLocation().getVx();
+//            linearVelocity.y = - infos.getLocation().getVy();
+//            ballBody.setLinearVelocity(linearVelocity);
+//
+//            Vector2 vector2 = new Vector2(point.x  / PTM_RATIO, point.y / PTM_RATIO);
+//            ballBody.setTransform(vector2, 0);
+            direction = new Vector2(-infos.getLocation().getVx(), -infos.getLocation().getVy());
+            CGPoint point = CGPoint.ccp((1 - infos.getLocation().getX()) * screenWith,
+                    (1 - infos.getLocation().getY()) * screenHeight);
+            ball.setPosition(point);
+            Vector2 vector2 = new Vector2(point.x  / PTM_RATIO, point.y/ PTM_RATIO);
+            ballBody.setTransform(vector2, ballBody.getAngle());
         }
 
     }
@@ -169,7 +201,7 @@ public class GameProjectionLayer extends BaseCCLayer{
     private void addBalls(int tag) {
         //添加球
         ball = SpriteUtils.getSprite("marbles_ball.png", SpriteConfig.BALL_SIZE, SpriteConfig.BALL_SIZE, false, tag);
-        CGPoint ballPoint = CGPoint.ccp(screenWith / 2, SpriteConfig.BALL_SIZE / 2 + SpriteConfig.NORMAL_BRICK_SIZE * 3 + SpriteConfig.NORMAL_CONTROL_BAR_H);
+        CGPoint ballPoint = CGPoint.ccp(screenWith / 2, screenHeight - (SpriteConfig.BALL_SIZE / 2 + SpriteConfig.NORMAL_BRICK_SIZE * 3 + SpriteConfig.NORMAL_CONTROL_BAR_H));
         ball.setPosition(ballPoint);
         this.addChild(ball);
 
@@ -187,10 +219,10 @@ public class GameProjectionLayer extends BaseCCLayer{
         fixtureDef.restitution = 1.0f;
         ballBody.createFixture(fixtureDef);
 
-        Vector2 linearVelocity = new Vector2();
-        linearVelocity.x = 10;
-        linearVelocity.y = 30;
-        ballBody.setLinearVelocity(linearVelocity);
+//        Vector2 linearVelocity = new Vector2();
+//        linearVelocity.x = 10;
+//        linearVelocity.y = 30;
+//        ballBody.setLinearVelocity(linearVelocity);
 
     }
 
@@ -330,8 +362,15 @@ public class GameProjectionLayer extends BaseCCLayer{
                 //Synchronize the Sprites position and rotation with the corresponding body
                 final CCSprite sprite = (CCSprite)userData;
                 final Vector2 pos = b.getPosition();
-                if(sprite != null){ // 球的运动
-                    sprite.setPosition(pos.x * PTM_RATIO, pos.y * PTM_RATIO);
+                if(sprite != null && start){ // 球的运动
+                    long now = System.currentTimeMillis();
+                    if(time != 0 && direction != null){
+                        CGPoint point = SpriteUtils.getNewPoint(sprite.getPosition(), direction.x, direction.y, (now - time) * 1.0f / 1000);
+                        sprite.setPosition(point);
+                        Vector2 vector2 = new Vector2(point.x  / PTM_RATIO, point.y/ PTM_RATIO);
+                        b.setTransform(vector2,b.getAngle());
+                    }
+                    time = now;
                 }
             }
         }

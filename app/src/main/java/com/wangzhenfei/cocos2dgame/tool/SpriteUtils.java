@@ -1,11 +1,12 @@
 package com.wangzhenfei.cocos2dgame.tool;
 
-import android.graphics.Rect;
+import android.util.Log;
+
+import com.wangzhenfei.cocos2dgame.SpriteConfig;
 
 import org.cocos2d.nodes.CCSprite;
 import org.cocos2d.types.CGPoint;
 import org.cocos2d.types.CGRect;
-import org.cocos2d.types.CGSize;
 
 /**
  * Created by wangzhenfei on 2016/11/9.
@@ -37,6 +38,17 @@ public class SpriteUtils {
         CGPoint point2 = sprite2.getPosition();
         return Utils.isCollsionWithRect(point1.x - w1 / 2,point1.y - h1 / 2 ,w1, h1,
                 point2.x - w2 / 2,point2.y - h2 / 2 ,w2, h2);
+    }
+
+    public static CGPoint getNewPoint(CGPoint point, float vX, float vY, float interval){
+        float x = (float)(vX * interval * SpriteConfig.v * 720 / Math.sqrt(vX * vX + vY * vY));
+        float y = (float)(vY * interval * SpriteConfig.v * 720 / Math.sqrt(vX * vX + vY * vY));
+        if(x > 720 || y > 1280){
+            return point;
+        }
+        Log.i("SpriteUtils", point.toString() + "--" + vX +"--" + vY +"--" + interval + "   x:" + x + "y:" + y);
+        CGPoint newPoint = CGPoint.ccp(point.x + x, point.y + y);
+        return  newPoint;
     }
 
 }

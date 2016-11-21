@@ -142,7 +142,7 @@ public class WaittingMatchLayer extends BaseCCLayer{
         if(jumpCount % 5 == 0){ // 1s
             setNum();
 
-            if(timeCount == 5){
+            if(timeCount == 60){
                 long id = Thread.currentThread().getId();
                 CCScene scene = CCScene.node();
                 scene.addChild(new GameLayer(null));

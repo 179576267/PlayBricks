@@ -54,7 +54,7 @@ public class GameLayer extends BaseCCLayer{
     // 自己的
     private CCSprite myControlBar;
     private Body myControlBarBody;
-
+    private long time;
     // 别人的
     private CCSprite offsetControlBar;
     private Body offsetControlBarBody;
@@ -74,11 +74,15 @@ public class GameLayer extends BaseCCLayer{
     protected Handler handler = new Handler(callHandlerThread.getLooper()) {
         @Override
         public void handleMessage(Message msg) {
-            int forceX = 0;
-            int forceY = 0;
-            forceX = 500;
-            forceY += 1500;
-            ballBody.applyForceToCenter(forceX, forceY);
+//            int forceX = 0;
+//            int forceY = 0;
+//            forceX = 100;
+//            forceY += 300;
+//            ballBody.applyForceToCenter(forceX, forceY);
+            Vector2 vector2 = new Vector2();
+            vector2.x = 10;
+            vector2.y = 10;
+            ballBody.setLinearVelocity(vector2);
             start = true;
         }
     };
@@ -93,13 +97,13 @@ public class GameLayer extends BaseCCLayer{
         if(info == null){
             info = Utils.readTestJson();
         }
-//        if(UserInfo.info.getId() == info.getInitiativeUser().getId()){
+        if(UserInfo.info.getId() == info.getInitiativeUser().getId()){
             myBatter = info.getInitiativeUser();
             offsetBatter = info.getPassivityUser();
-//        }else {
-//            myBatter = info.getPassivityUser();
-//            offsetBatter = info.getInitiativeUser();
-//        }
+        }else {
+            myBatter = info.getPassivityUser();
+            offsetBatter = info.getInitiativeUser();
+        }
         handler.sendEmptyMessageDelayed(0, 5000);
         EventBus.getDefault().register(this);
         this.setIsTouchEnabled(true);
@@ -113,6 +117,12 @@ public class GameLayer extends BaseCCLayer{
         ContactListener listener = new ContactListener() {
             @Override
             public void beginContact(Contact contact) {
+
+
+            }
+
+            @Override
+            public void endContact(Contact contact) {
                 CCSprite spriteA = null; //
                 Body bodyA = contact.getFixtureA().getBody();
                 if(bodyA != null && bodyA.getUserData() instanceof CCSprite){
@@ -135,17 +145,10 @@ public class GameLayer extends BaseCCLayer{
                             sendBallLocation(bodyB);
                             dealContact(bodyA, spriteA.getTag());
                         }
-
                     }else {
                         Log.i(TAG, spriteA.getTag() + "----"+ spriteB.getTag());
                     }
                 }
-
-            }
-
-            @Override
-            public void endContact(Contact contact) {
-
             }
 
             @Override
@@ -250,46 +253,113 @@ public class GameLayer extends BaseCCLayer{
      * 增加墙
      */
     private void addWall() {
-        float scaledWidth = screenWith/PTM_RATIO;
-        float scaledHeight = screenHeight/PTM_RATIO;
-        // Define the ground body.
-        BodyDef bxGroundBodyDef = new BodyDef();
-        bxGroundBodyDef.position.set(0.0f, 0.0f);
 
-        // Call the body factory which allocates memory for the ground body
-        // from a pool and creates the ground box shape (also from a pool).
-        // The body is also added to the world.
-        Body groundBody = bxWorld.createBody(bxGroundBodyDef);
-
-        // Define the ground box shape.
-        EdgeShape groundBox = new EdgeShape();
-
-        Vector2 bottomLeft = new Vector2(0f,0f);
-        Vector2 topLeft = new Vector2(0f,scaledHeight);
-        Vector2 topRight = new Vector2(scaledWidth,scaledHeight);
-        Vector2 bottomRight = new Vector2(scaledWidth,0f);
-
+        // 左
+        CGPoint ballPoint = CGPoint.ccp(0, screenHeight / 2);
+        BodyDef bodyDef = new BodyDef();
+        bodyDef.type = BodyDef.BodyType.StaticBody;
+        bodyDef.position.set(ballPoint.x / PTM_RATIO, ballPoint.y / PTM_RATIO);
+        PolygonShape dynamicBox = new PolygonShape();
+        dynamicBox.setAsBox(1 / 2 / PTM_RATIO, screenHeight / 2 / PTM_RATIO);//These are mid points for our 1m box
+        Body body = bxWorld.createBody(bodyDef);
+        body.setUserData(CCSprite.sprite("app_logo.png"));
         FixtureDef fixtureDef = new FixtureDef();
-        fixtureDef.shape = groundBox;
-        fixtureDef.density = 1.0f;
+        fixtureDef.shape = dynamicBox;
+        fixtureDef.density = 1000.0f;
         fixtureDef.friction = 0f;
         fixtureDef.restitution = 1.0f;
+        body.createFixture(fixtureDef);
 
-        // bottom
-        groundBox.set(bottomLeft, bottomRight);
-        groundBody.createFixture(fixtureDef);
+        // 上
+        ballPoint = CGPoint.ccp(screenWith / 2, screenHeight);
+        bodyDef = new BodyDef();
+        bodyDef.type = BodyDef.BodyType.StaticBody;
+        bodyDef.position.set(ballPoint.x / PTM_RATIO, ballPoint.y / PTM_RATIO);
+        dynamicBox = new PolygonShape();
+        dynamicBox.setAsBox(screenWith / 2 / PTM_RATIO, 1 / 2 / PTM_RATIO);//These are mid points for our 1m box
+        body = bxWorld.createBody(bodyDef);
+        body.setUserData(CCSprite.sprite("app_logo.png"));
+        fixtureDef = new FixtureDef();
+        fixtureDef.shape = dynamicBox;
+        fixtureDef.density = 1000.0f;
+        fixtureDef.friction = 0f;
+        fixtureDef.restitution = 1.0f;
+        body.createFixture(fixtureDef);
 
-        // top
-        groundBox.set(topLeft, topRight);
-        groundBody.createFixture(fixtureDef);
 
-        // left
-        groundBox.set( topLeft, bottomLeft );
-        groundBody.createFixture(fixtureDef);
+        // 右
+        ballPoint = CGPoint.ccp(screenWith, screenHeight / 2);
+        bodyDef = new BodyDef();
+        bodyDef.type = BodyDef.BodyType.StaticBody;
+        bodyDef.position.set(ballPoint.x / PTM_RATIO, ballPoint.y / PTM_RATIO);
+        dynamicBox = new PolygonShape();
+        dynamicBox.setAsBox(1 / 2 / PTM_RATIO, screenHeight / 2 / PTM_RATIO);//These are mid points for our 1m box
+        body = bxWorld.createBody(bodyDef);
+        body.setUserData(CCSprite.sprite("app_logo.png"));
+        fixtureDef = new FixtureDef();
+        fixtureDef.shape = dynamicBox;
+        fixtureDef.density = 1000.0f;
+        fixtureDef.friction = 0f;
+        fixtureDef.restitution = 1.0f;
+        body.createFixture(fixtureDef);
 
-        // right
-        groundBox.set( topRight, bottomRight );
-        groundBody.createFixture(fixtureDef);
+        // 下
+        ballPoint = CGPoint.ccp(screenWith / 2, 0);
+        bodyDef = new BodyDef();
+        bodyDef.type = BodyDef.BodyType.StaticBody;
+        bodyDef.position.set(ballPoint.x / PTM_RATIO, ballPoint.y / PTM_RATIO);
+        dynamicBox = new PolygonShape();
+        dynamicBox.setAsBox(screenWith / 2 / PTM_RATIO, 1 / 2 / PTM_RATIO);//These are mid points for our 1m box
+        body = bxWorld.createBody(bodyDef);
+        body.setUserData(CCSprite.sprite("app_logo.png"));
+        fixtureDef = new FixtureDef();
+        fixtureDef.shape = dynamicBox;
+        fixtureDef.density = 1000.0f;
+        fixtureDef.friction = 0f;
+        fixtureDef.restitution = 1.0f;
+        body.createFixture(fixtureDef);
+
+
+//        float scaledWidth = screenWith/PTM_RATIO;
+//        float scaledHeight = screenHeight/PTM_RATIO;
+//        // Define the ground body.
+//        BodyDef bxGroundBodyDef = new BodyDef();
+//        bxGroundBodyDef.position.set(0.0f, 0.0f);
+//
+//        // Call the body factory which allocates memory for the ground body
+//        // from a pool and creates the ground box shape (also from a pool).
+//        // The body is also added to the world.
+//        Body groundBody = bxWorld.createBody(bxGroundBodyDef);
+//
+//        // Define the ground box shape.
+//        EdgeShape groundBox = new EdgeShape();
+//
+//        Vector2 bottomLeft = new Vector2(0f,0f);
+//        Vector2 topLeft = new Vector2(0f,scaledHeight);
+//        Vector2 topRight = new Vector2(scaledWidth,scaledHeight);
+//        Vector2 bottomRight = new Vector2(scaledWidth,0f);
+//
+//        FixtureDef fixtureDef = new FixtureDef();
+//        fixtureDef.shape = groundBox;
+//        fixtureDef.density = 1.0f;
+//        fixtureDef.friction = 0f;
+//        fixtureDef.restitution = 1.0f;
+//
+//        // bottom
+//        groundBox.set(bottomLeft, bottomRight);
+//        groundBody.createFixture(fixtureDef);
+//
+//        // top
+//        groundBox.set(topLeft, topRight);
+//        groundBody.createFixture(fixtureDef);
+//
+//        // left
+//        groundBox.set( topLeft, bottomLeft );
+//        groundBody.createFixture(fixtureDef);
+//
+//        // right
+//        groundBox.set( topRight, bottomRight );
+//        groundBody.createFixture(fixtureDef);
     }
 
     private void addSprite() {
@@ -509,11 +579,17 @@ public class GameLayer extends BaseCCLayer{
                 final CCSprite sprite = (CCSprite)userData;
                 final Vector2 pos = b.getPosition();
                 if(balls.contains(sprite.getTag()) && start){ // 球的运动
-                    sprite.setPosition(pos.x * PTM_RATIO, pos.y * PTM_RATIO);
+//                    sprite.setPosition(pos.x * PTM_RATIO, pos.y * PTM_RATIO);
                     Vector2 linearVelocity = b.getLinearVelocity();
-
+                    long now = System.currentTimeMillis();
+                    if(time != 0){
+                        CGPoint point = SpriteUtils.getNewPoint(sprite.getPosition(), linearVelocity.x, linearVelocity.y, (now - time) * 1.0f / 1000);
+                        sprite.setPosition(point);
+                        Vector2 vector2 = new Vector2(point.x  / PTM_RATIO, point.y / PTM_RATIO);
+                        b.setTransform(vector2,b.getAngle());
+                    }
+                    time = now;
                     // 发送球的位置
-
                     if(linearVelocity.y == 0){
                         b.applyForceToCenter(0,20);
                     }

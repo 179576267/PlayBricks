@@ -1,6 +1,7 @@
 package com.wangzhenfei.cocos2dgame;
 
 import android.app.Activity;
+import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.view.Window;
 import android.view.WindowManager;
@@ -12,6 +13,7 @@ import com.wangzhenfei.cocos2dgame.socket.MySocket;
 import org.cocos2d.layers.CCScene;
 import org.cocos2d.nodes.CCDirector;
 import org.cocos2d.opengl.CCGLSurfaceView;
+import org.cocos2d.types.CGSize;
 
 public class MainActivity extends Activity {
     CCGLSurfaceView mGLSurfaceView = null;
@@ -26,7 +28,6 @@ public class MainActivity extends Activity {
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        long id = Thread.currentThread().getId();
         mGLSurfaceView = new CCGLSurfaceView(this);
         CCDirector director = CCDirector.sharedDirector();
         director.attachInView(mGLSurfaceView);
@@ -37,7 +38,7 @@ public class MainActivity extends Activity {
         // show FPS
         CCDirector.sharedDirector().setDisplayFPS(true);
         // frames per second
-        CCDirector.sharedDirector().setAnimationInterval(1.0f / 30.0f);
+        CCDirector.sharedDirector().setAnimationInterval(1.0f / 60.0f);
 
         CCScene scene = CCScene.node();
         scene.addChild(new StartPageLayer());

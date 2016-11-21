@@ -21,7 +21,7 @@ public class GameApplication extends MultiDexApplication {
     public void onCreate() {
         super.onCreate();
         application = this;
-//        MySocket.getInstance().initSocket();
+        MySocket.getInstance().initSocket();
     }
 
     public static GameApplication getAppInstance() {
