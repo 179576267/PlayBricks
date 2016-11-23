@@ -3,10 +3,17 @@ package com.wangzhenfei.cocos2dgame.socket;
 import android.util.Log;
 
 import com.wangzhenfei.cocos2dgame.socket.netty.NettyClientHandler;
+import com.wangzhenfei.cocos2dgame.socket.netty.NettyUDPServer;
 import com.wangzhenfei.cocos2dgame.tool.JsonUtils;
 import com.wangzhenfei.cocos2dgame.tool.Utils;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
@@ -28,11 +35,23 @@ public class MySocket {
     private  final String TAG = getClass().getSimpleName();
 
     private static MySocket mInstance;
+    public static String  ip = "";
     private SocketChannel socketChannel;
+    DatagramSocket client;
     private MySocket(){
     }
 
     public void initSocket() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    new NettyUDPServer().start();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }).start();
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -74,11 +93,14 @@ public class MySocket {
                         socketChannel = (SocketChannel) future.channel();
                     }
                     future.channel().closeFuture().sync();
+
                 }catch (InterruptedException e){
                     Log.i(TAG,e.toString());
-                }finally {
+                } finally {
                     eventLoopGroup.shutdownGracefully();
                 }
+
+
             }
         }).start();
     }
@@ -95,9 +117,9 @@ public class MySocket {
     }
 
     //*********************************api*************************************************
-    public void setMessage(Object s){
+    public void setMessage(Object s) {
         Log.i(TAG, s.toString());
-        if(socketChannel != null){
+        if (socketChannel != null) {
             ChannelFuture future = null;
             try {
                 future = socketChannel.writeAndFlush(Utils.getSendByteBuf(JsonUtils.toJson(s)));
@@ -117,6 +139,35 @@ public class MySocket {
                 }
             });
         }
+    }
+
+
+    public void setUdpMessage(Object s){
+        if(client == null){
+            try {
+                DatagramSocket client = new DatagramSocket();
+                client.setSoTimeout(3000);
+                InetAddress address = InetAddress.getByName(ip);
+                String str = JsonUtils.toJson(s);
+                byte[] data = str.getBytes("UTF-8");
+                DatagramPacket sendPacket = new DatagramPacket(data, data.length, address,8888);
+                client.send(sendPacket);
+
+            } catch (SocketException e) {
+                e.printStackTrace();
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+
+
+
     }
 
     //*********************************api*************************************************

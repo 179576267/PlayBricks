@@ -1,8 +1,6 @@
 package com.wangzhenfei.cocos2dgame.layer;
 
-import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.Message;
 import android.view.MotionEvent;
 
 import com.badlogic.gdx.math.Vector2;
@@ -11,12 +9,14 @@ import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.CircleShape;
 import com.badlogic.gdx.physics.box2d.EdgeShape;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
+import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
 import com.wangzhenfei.cocos2dgame.SpriteConfig;
 import com.wangzhenfei.cocos2dgame.model.BattleBall;
 import com.wangzhenfei.cocos2dgame.model.BattleBrick;
 import com.wangzhenfei.cocos2dgame.model.BattleInitInfo;
 import com.wangzhenfei.cocos2dgame.model.ControlBarInfo;
+import com.wangzhenfei.cocos2dgame.model.Location;
 import com.wangzhenfei.cocos2dgame.model.UserInfo;
 import com.wangzhenfei.cocos2dgame.socket.MsgData;
 import com.wangzhenfei.cocos2dgame.socket.MySocket;
@@ -24,6 +24,7 @@ import com.wangzhenfei.cocos2dgame.socket.RequestCode;
 import com.wangzhenfei.cocos2dgame.tool.SpriteUtils;
 
 import org.cocos2d.actions.UpdateCallback;
+import org.cocos2d.actions.interval.CCMoveTo;
 import org.cocos2d.nodes.CCDirector;
 import org.cocos2d.nodes.CCSprite;
 import org.cocos2d.types.CGPoint;
@@ -31,6 +32,7 @@ import org.cocos2d.types.CGPoint;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import de.greenrobot.event.EventBus;
 
@@ -51,28 +53,18 @@ public class GameProjectionLayer extends BaseCCLayer{
 
     // 自己的
     private CCSprite myControlBar;
-
+    private Body myControlBarBody;
     // 别人的
     private CCSprite offsetControlBar;
-
+    private Body offsetControlBarBody;
+    LinkedBlockingQueue<Location> queue = new LinkedBlockingQueue<Location>();
+    // 球的集合
+    private List<Integer> balls = new ArrayList<Integer>();
     HandlerThread callHandlerThread = new HandlerThread("callHandlerThread");
     { callHandlerThread.start(); }
     private boolean start;
-    protected Handler handler = new Handler(callHandlerThread.getLooper()) {
-        @Override
-        public void handleMessage(Message msg) {
-//            int forceX = 0;
-//            int forceY = 0;
-//            forceX = 100;
-//            forceY += 300;
-//            ballBody.applyForceToCenter(forceX, forceY);
-            Vector2 vector2 = new Vector2();
-            vector2.x = -10;
-            vector2.y = -10;
-            ballBody.setLinearVelocity(vector2);
-            start = true;
-        }
-    };
+    private int timeCount;
+
     public GameProjectionLayer(BattleInitInfo info) {
         super();
         Vector2 gravity = new Vector2(0f, 0f);
@@ -88,8 +80,12 @@ public class GameProjectionLayer extends BaseCCLayer{
             myBatter = info.getPassivityUser();
             offsetBatter = info.getInitiativeUser();
         }
-        handler.sendEmptyMessageDelayed(0, 5000);
+        MySocket.getInstance().ip = offsetBatter.getIp();
+
         addSprite();
+        balls.add(SpriteConfig.TAG_ADD_BALL1);
+        balls.add(SpriteConfig.TAG_ADD_BALL2);
+        balls.add(SpriteConfig.TAG_NORMAL_BALL);
     }
 
     @Override
@@ -113,12 +109,15 @@ public class GameProjectionLayer extends BaseCCLayer{
 //
 //            Vector2 vector2 = new Vector2(point.x  / PTM_RATIO, point.y / PTM_RATIO);
 //            ballBody.setTransform(vector2, 0);
-            direction = new Vector2(-infos.getLocation().getVx(), -infos.getLocation().getVy());
-            CGPoint point = CGPoint.ccp((1 - infos.getLocation().getX()) * screenWith,
-                    (1 - infos.getLocation().getY()) * screenHeight);
-            ball.setPosition(point);
-            Vector2 vector2 = new Vector2(point.x  / PTM_RATIO, point.y/ PTM_RATIO);
-            ballBody.setTransform(vector2, ballBody.getAngle());
+//            direction = new Vector2(-infos.getLocation().getVx(), -infos.getLocation().getVy());
+//            CGPoint point = CGPoint.ccp((1 - infos.getLocation().getX()) * screenWith,
+//                    (1 - infos.getLocation().getY()) * screenHeight);
+//            ball.setPosition(point);
+            try {
+                queue.put(infos.getLocation());
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
 
     }
@@ -216,7 +215,7 @@ public class GameProjectionLayer extends BaseCCLayer{
         fixtureDef.shape = dynamicBox;
         fixtureDef.density = 0f;
         fixtureDef.friction = 0f;
-        fixtureDef.restitution = 1.0f;
+        fixtureDef.restitution = 0f;
         ballBody.createFixture(fixtureDef);
 
 //        Vector2 linearVelocity = new Vector2();
@@ -261,6 +260,7 @@ public class GameProjectionLayer extends BaseCCLayer{
                 brickBg.setPosition(point);
                 this.addChild(brickBg);
                 this.addChild(brick);
+                addToWorld(brickBg, SpriteConfig.NORMAL_BRICK_SIZE, SpriteConfig.NORMAL_BRICK_SIZE);
             }
         }
 
@@ -268,6 +268,7 @@ public class GameProjectionLayer extends BaseCCLayer{
         CCSprite spHome = SpriteUtils.getSprite("home.png", SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE, false, SpriteConfig.TAG_MY_NORMAL_HOME_BRICK);
         spHome.setPosition(CGPoint.ccp(screenWith / 2, SpriteConfig.NORMAL_HOME_BRICK_SIZE / 2));
         this.addChild(spHome);
+        addToWorld(spHome,  SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE);
 
 
         //添加杆子
@@ -275,6 +276,22 @@ public class GameProjectionLayer extends BaseCCLayer{
         CGPoint ccp = CGPoint.ccp(screenWith / 2, SpriteConfig.NORMAL_CONTROL_BAR_H / 2 + SpriteConfig.NORMAL_BRICK_SIZE * 3 + 10);
         myControlBar.setPosition(ccp);
         this.addChild(myControlBar);
+
+        BodyDef bodyDef = new BodyDef();
+        bodyDef.type = BodyDef.BodyType.StaticBody;
+        bodyDef.position.set(ccp.x / PTM_RATIO, ccp.y / PTM_RATIO);
+
+        PolygonShape dynamicBox = new PolygonShape();
+        dynamicBox.setAsBox(SpriteConfig.CONTROL_BAR_W / 2 / PTM_RATIO, SpriteConfig.NORMAL_CONTROL_BAR_H / 2 / PTM_RATIO);
+
+        myControlBarBody = bxWorld.createBody(bodyDef);
+        myControlBarBody.setUserData(myControlBar);
+        FixtureDef fixtureDef = new FixtureDef();
+        fixtureDef.shape = dynamicBox;
+        fixtureDef.density = 1000.0f;
+        fixtureDef.friction = 1f;
+        fixtureDef.restitution = 0f;
+        myControlBarBody.createFixture(fixtureDef);
     }
     private void addOffsetHome() {
         // 增加自己的砖块
@@ -308,6 +325,7 @@ public class GameProjectionLayer extends BaseCCLayer{
                 brickBg.setPosition(point);
                 this.addChild(brickBg);
                 this.addChild(brick);
+                addToWorld(brickBg, SpriteConfig.NORMAL_BRICK_SIZE, SpriteConfig.NORMAL_BRICK_SIZE);
             }
         }
 
@@ -315,15 +333,54 @@ public class GameProjectionLayer extends BaseCCLayer{
         CCSprite spHome = SpriteUtils.getSprite("app_logo.png", SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE, false, SpriteConfig.TAG_OFFSET_NORMAL_HOME_BRICK);
         spHome.setPosition(CGPoint.ccp(screenWith / 2, screenHeight - SpriteConfig.NORMAL_HOME_BRICK_SIZE / 2));
         this.addChild(spHome);
-
+        addToWorld(spHome, SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE);
         //添加杆子
         offsetControlBar = SpriteUtils.getSprite("marbles_baffle.png", SpriteConfig.CONTROL_BAR_W, SpriteConfig.NORMAL_CONTROL_BAR_H, false, SpriteConfig.TAG_OFFSET_NORMAL_CONTROL_BAR);
         CGPoint ccp = CGPoint.ccp(screenWith / 2,
                 screenHeight - (SpriteConfig.NORMAL_CONTROL_BAR_H / 2 + SpriteConfig.NORMAL_BRICK_SIZE * 3 + 10));
         offsetControlBar.setPosition(ccp);
         this.addChild(offsetControlBar);
+
+        BodyDef bodyDef = new BodyDef();
+        bodyDef.type = BodyDef.BodyType.StaticBody;
+        bodyDef.position.set(ccp.x / PTM_RATIO, ccp.y / PTM_RATIO);
+
+        PolygonShape dynamicBox = new PolygonShape();
+        dynamicBox.setAsBox(SpriteConfig.CONTROL_BAR_W / 2 / PTM_RATIO, SpriteConfig.NORMAL_CONTROL_BAR_H / 2 / PTM_RATIO);
+
+        offsetControlBarBody = bxWorld.createBody(bodyDef);
+        offsetControlBarBody.setUserData(offsetControlBar);
+        FixtureDef fixtureDef = new FixtureDef();
+        fixtureDef.shape = dynamicBox;
+        fixtureDef.density = 1000.0f;
+        fixtureDef.friction = 1f;
+        fixtureDef.restitution = 0f;
+        offsetControlBarBody.createFixture(fixtureDef);
     }
 
+
+
+    /**
+     * 添加到世界中
+     * @param ball
+     */
+    private Body addToWorld(CCSprite ball,int w , int h) {
+        CGPoint ballPoint = ball.getPosition();
+        BodyDef bodyDef = new BodyDef();
+        bodyDef.type = BodyDef.BodyType.StaticBody;
+        bodyDef.position.set(ballPoint.x / PTM_RATIO, ballPoint.y / PTM_RATIO);
+        PolygonShape dynamicBox = new PolygonShape();
+        dynamicBox.setAsBox(w / 2 / PTM_RATIO, h / 2 / PTM_RATIO);//These are mid points for our 1m box
+        Body body = bxWorld.createBody(bodyDef);
+        body.setUserData(ball);
+        FixtureDef fixtureDef = new FixtureDef();
+        fixtureDef.shape = dynamicBox;
+        fixtureDef.density = 1000.0f;
+        fixtureDef.friction = 0f;
+        fixtureDef.restitution = 0f;
+        body.createFixture(fixtureDef);
+        return body;
+    }
 
     @Override
     public void onEnter() {
@@ -352,9 +409,9 @@ public class GameProjectionLayer extends BaseCCLayer{
             bxWorld.step(FPS, 8, 1);
         }
         rdelta = 0;
+        timeCount ++;
         // Iterate over the bodies in the physics world
         Iterator<Body> it = bxWorld.getBodies();
-        List<BattleBall> list = new ArrayList<BattleBall>();
         while(it.hasNext()) {
             Body b = it.next();
             Object userData = b.getUserData();
@@ -362,15 +419,27 @@ public class GameProjectionLayer extends BaseCCLayer{
                 //Synchronize the Sprites position and rotation with the corresponding body
                 final CCSprite sprite = (CCSprite)userData;
                 final Vector2 pos = b.getPosition();
-                if(sprite != null && start){ // 球的运动
-                    long now = System.currentTimeMillis();
-                    if(time != 0 && direction != null){
-                        CGPoint point = SpriteUtils.getNewPoint(sprite.getPosition(), direction.x, direction.y, (now - time) * 1.0f / 1000);
-                        sprite.setPosition(point);
-                        Vector2 vector2 = new Vector2(point.x  / PTM_RATIO, point.y/ PTM_RATIO);
-                        b.setTransform(vector2,b.getAngle());
+                if(sprite != null && balls.contains(sprite.getTag())){ // 球的运动
+//                    long now = System.currentTimeMillis();
+//                    if(time != 0 && direction != null){
+//                        CGPoint point = SpriteUtils.getNewPoint(sprite.getPosition(), direction.x, direction.y, (now - time) * 1.0f / 1000);
+//                        sprite.setPosition(point);
+//                        Vector2 vector2 = new Vector2(point.x  / PTM_RATIO, point.y/ PTM_RATIO);
+//                        b.setTransform(vector2,b.getAngle());
+//                    }
+//                    time = now;
+                    Location location = queue.poll();
+                    if(location != null){
+                        CGPoint point = CGPoint.ccp((1 - location.getX()) * screenWith,
+                                (1 - location.getY()) * screenHeight);
+//                        ball.setPosition(point);
+                        CCMoveTo moveTo = CCMoveTo.action(delta,point);
+                        ball.runAction(moveTo);
                     }
-                    time = now;
+                    if(timeCount > 60){
+                        timeCount = 0;
+                        queue.clear();
+                    }
                 }
             }
         }

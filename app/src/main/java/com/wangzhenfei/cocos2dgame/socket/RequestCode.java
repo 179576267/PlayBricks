@@ -6,7 +6,9 @@ package com.wangzhenfei.cocos2dgame.socket;
  */
 public class RequestCode {
     public final static String IP = "192.168.2.121";
+//    public final static String IP = "114.95.157.185";
     public final static int PORT = 2817;
+//    public final static int PORT = 9999;
 
     /**
      * 登录

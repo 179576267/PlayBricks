@@ -44,6 +44,7 @@ public class BattleInitInfo {
         private int id;
         private String name;
         private String avatar;
+        private String ip;
         /**
          * id : 101
          * type : 0
@@ -51,6 +52,14 @@ public class BattleInitInfo {
          */
 
         private List<BlockListBean> blockList;
+
+        public String getIp() {
+            return ip;
+        }
+
+        public void setIp(String ip) {
+            this.ip = ip;
+        }
 
         public int getId() {
             return id;

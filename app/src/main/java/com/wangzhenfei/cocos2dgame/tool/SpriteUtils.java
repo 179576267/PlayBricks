@@ -41,11 +41,22 @@ public class SpriteUtils {
     }
 
     public static CGPoint getNewPoint(CGPoint point, float vX, float vY, float interval){
-        float x = (float)(vX * interval * SpriteConfig.v * 720 / Math.sqrt(vX * vX + vY * vY));
-        float y = (float)(vY * interval * SpriteConfig.v * 720 / Math.sqrt(vX * vX + vY * vY));
-        if(x > 720 || y > 1280){
-            return point;
-        }
+//        if(vX ==  0){
+//            vX = 10;
+//        }
+//        if(vY == 0){
+//            vY = 10;
+//        }
+        float x = (float)(vX * interval * SpriteConfig.v * 100 / Math.sqrt(vX * vX + vY * vY));
+        float y = (float)(vY * interval * SpriteConfig.v * 100 / Math.sqrt(vX * vX + vY * vY));
+//        if(x + point.x > 720 || y + point.y > 1280){
+//            return point;
+//        }
+//
+//        if(x + point.x < 0 || y + point.y < 0){
+//            return point;
+//        }
+
         Log.i("SpriteUtils", point.toString() + "--" + vX +"--" + vY +"--" + interval + "   x:" + x + "y:" + y);
         CGPoint newPoint = CGPoint.ccp(point.x + x, point.y + y);
         return  newPoint;
