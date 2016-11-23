@@ -651,6 +651,7 @@ public class GameLayer extends BaseCCLayer{
                 endLable.setColor(new ccColor3B(255, 255, 255));
                 this.addChild(endLable);
             }
+            start = false;
         }
 
         if ((rdelta += delta) < FPS) return;
