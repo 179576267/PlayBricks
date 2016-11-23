@@ -1,7 +1,5 @@
 package com.wangzhenfei.cocos2dgame.layer;
 
-import android.content.Context;
-
 import org.cocos2d.layers.CCLayer;
 import org.cocos2d.nodes.CCDirector;
 import org.cocos2d.types.CGSize;

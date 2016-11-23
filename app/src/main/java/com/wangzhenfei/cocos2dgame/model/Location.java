@@ -9,31 +9,9 @@ public class Location {
 
     private float y;
 
-    private float vx;
-
-    private float vy;
-
-    public Location(float x, float y, float vx, float vy) {
+    public Location(float x, float y) {
         this.x = x;
         this.y = y;
-        this.vx = vx;
-        this.vy = vy;
-    }
-
-    public float getVx() {
-        return vx;
-    }
-
-    public void setVx(float vx) {
-        this.vx = vx;
-    }
-
-    public float getVy() {
-        return vy;
-    }
-
-    public void setVy(float vy) {
-        this.vy = vy;
     }
 
     public float getX() {
@@ -57,8 +35,6 @@ public class Location {
         return "Location{" +
                 "x=" + x +
                 ", y=" + y +
-                ", vx=" + vx +
-                ", vy=" + vy +
                 '}';
     }
 }

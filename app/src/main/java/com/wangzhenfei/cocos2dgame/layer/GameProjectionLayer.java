@@ -1,22 +1,21 @@
 package com.wangzhenfei.cocos2dgame.layer;
 
-import android.os.HandlerThread;
+import android.util.Log;
 import android.view.MotionEvent;
 
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
-import com.badlogic.gdx.physics.box2d.BodyDef;
-import com.badlogic.gdx.physics.box2d.CircleShape;
-import com.badlogic.gdx.physics.box2d.EdgeShape;
-import com.badlogic.gdx.physics.box2d.FixtureDef;
+import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
-import com.badlogic.gdx.physics.box2d.World;
 import com.wangzhenfei.cocos2dgame.SpriteConfig;
 import com.wangzhenfei.cocos2dgame.model.BattleBall;
 import com.wangzhenfei.cocos2dgame.model.BattleBrick;
 import com.wangzhenfei.cocos2dgame.model.BattleInitInfo;
 import com.wangzhenfei.cocos2dgame.model.ControlBarInfo;
+import com.wangzhenfei.cocos2dgame.model.E_GameType;
+import com.wangzhenfei.cocos2dgame.model.GameResult;
 import com.wangzhenfei.cocos2dgame.model.Location;
+import com.wangzhenfei.cocos2dgame.model.PropStatusInfo;
 import com.wangzhenfei.cocos2dgame.model.UserInfo;
 import com.wangzhenfei.cocos2dgame.socket.MsgData;
 import com.wangzhenfei.cocos2dgame.socket.MySocket;
@@ -24,15 +23,18 @@ import com.wangzhenfei.cocos2dgame.socket.RequestCode;
 import com.wangzhenfei.cocos2dgame.tool.SpriteUtils;
 
 import org.cocos2d.actions.UpdateCallback;
-import org.cocos2d.actions.interval.CCMoveTo;
+import org.cocos2d.layers.CCScene;
 import org.cocos2d.nodes.CCDirector;
+import org.cocos2d.nodes.CCLabel;
 import org.cocos2d.nodes.CCSprite;
 import org.cocos2d.types.CGPoint;
+import org.cocos2d.types.CGRect;
+import org.cocos2d.types.CGSize;
+import org.cocos2d.types.ccColor3B;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import de.greenrobot.event.EventBus;
 
@@ -41,38 +43,25 @@ import de.greenrobot.event.EventBus;
  * 游戏镜像世界
  */
 public class GameProjectionLayer extends BaseCCLayer{
-    private World bxWorld = null;
-    protected static final float FPS = (float)CCDirector.sharedDirector().getAnimationInterval();
-    private static float rdelta = 0;
-    private long time = 0;
-    CCSprite ball;
-    private Body ballBody;
     private BattleInitInfo.InitiativeUserBean myBatter;
     private BattleInitInfo.InitiativeUserBean offsetBatter;
-    private Vector2 direction;
-
     // 自己的
     private CCSprite myControlBar;
-    private Body myControlBarBody;
     // 别人的
     private CCSprite offsetControlBar;
-    private Body offsetControlBarBody;
-    LinkedBlockingQueue<Location> queue = new LinkedBlockingQueue<Location>();
     // 球的集合
     private List<Integer> balls = new ArrayList<Integer>();
-    HandlerThread callHandlerThread = new HandlerThread("callHandlerThread");
-    { callHandlerThread.start(); }
-    private boolean start;
-    private int timeCount;
+
+    CCLabel endLable;
+
+    private CCSprite subNum;
+    private CCSprite bgNum;
+    private int timeCount = 5;
 
     public GameProjectionLayer(BattleInitInfo info) {
         super();
-        Vector2 gravity = new Vector2(0f, 0f);
-        bxWorld = new World(gravity, true);
-        bxWorld.setContinuousPhysics(true);
         EventBus.getDefault().register(this);
         this.setIsTouchEnabled(true);
-        long id = Thread.currentThread().getId();
         if(UserInfo.info.getId() == info.getInitiativeUser().getId()){
             myBatter = info.getInitiativeUser();
             offsetBatter = info.getPassivityUser();
@@ -86,10 +75,30 @@ public class GameProjectionLayer extends BaseCCLayer{
         balls.add(SpriteConfig.TAG_ADD_BALL1);
         balls.add(SpriteConfig.TAG_ADD_BALL2);
         balls.add(SpriteConfig.TAG_NORMAL_BALL);
+        schedule("startMinus", 1);
+    }
+
+    public void startMinus(float rdelta){
+        if(timeCount == 0){
+            if(subNum != null){
+                subNum.removeSelf();
+            }
+            if(bgNum != null){
+                bgNum.removeSelf();
+            }
+            unschedule("startMinus");
+        }else {
+            setNum();
+        }
+        timeCount  --;
     }
 
     @Override
     public void goToNext() {
+        CCScene scene = CCScene.node();
+        scene.addChild(new StartPageLayer());
+        // Make the Scene active
+        CCDirector.sharedDirector().runWithScene(scene);
         EventBus.getDefault().unregister(this);
     }
 
@@ -97,30 +106,32 @@ public class GameProjectionLayer extends BaseCCLayer{
      * 球的位置回调
      * @param infos
      */
-    public void onEvent( BattleBall infos) {
+    public void onEvent( List<BattleBall> infos) {
         if(infos != null){
-//            CGPoint point = CGPoint.ccp((1 - infos.getLocation().getX()) * screenWith,
-//                    (1 - infos.getLocation().getY()) * screenHeight);
-//            ball.setPosition(point);
-//            Vector2 linearVelocity = new Vector2();
-//            linearVelocity.x = - infos.getLocation().getVx();
-//            linearVelocity.y = - infos.getLocation().getVy();
-//            ballBody.setLinearVelocity(linearVelocity);
-//
-//            Vector2 vector2 = new Vector2(point.x  / PTM_RATIO, point.y / PTM_RATIO);
-//            ballBody.setTransform(vector2, 0);
-//            direction = new Vector2(-infos.getLocation().getVx(), -infos.getLocation().getVy());
-//            CGPoint point = CGPoint.ccp((1 - infos.getLocation().getX()) * screenWith,
-//                    (1 - infos.getLocation().getY()) * screenHeight);
-//            ball.setPosition(point);
-            try {
-                queue.put(infos.getLocation());
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+           if(infos.size() == 1){
+               hideMoreBall();
+           }
+            for(int i=0; i < Math.min(infos.size(), balls.size()); i++){
+                CCSprite ball = (CCSprite) getChildByTag(infos.get(i).getId());
+                if(ball != null){
+                    CGPoint point = CGPoint.ccp((1 - infos.get(i).getLocation().getX()) * screenWith,
+                            (1 - infos.get(i).getLocation().getY()) * screenHeight);
+                    ball.setPosition(point);
+                }
             }
         }
 
     }
+
+    /**
+     * 游戏结果回调
+     */
+    GameResult result;
+    public void onEvent(GameResult result) {
+        this.result = result;
+    }
+
+
     /**
      * 对方横杆位置回调
      * @param infos
@@ -137,92 +148,63 @@ public class GameProjectionLayer extends BaseCCLayer{
      * 碰撞的回调
      * @param infos
      */
+    BattleBrick battleBrick;
     public void onEventBackgroundThread( BattleBrick infos) {
-        if(infos != null){
-            removeChildByTag(infos.getId(),true);
-            removeChildByTag(infos.getId() - 50, true);
-        }
+        battleBrick = infos;
     }
+
+
+    /**
+     * 道具状态的回调
+     */
+    public void onEventBackgroundThread(PropStatusInfo info) {
+       if(info.getPropId() == E_GameType.ADD_WIDTH.getCode()){
+            if(info.isShow()){
+                offsetControlBar.setScaleX((SpriteConfig.EXPEND_CONTROL_BAR_W) / myControlBar.getContentSize().width);
+            }else {
+                offsetControlBar.setScaleX((SpriteConfig.NORMAL_CONTROL_BAR_W) / myControlBar.getContentSize().width);
+            }
+       }else  if(info.getPropId() == E_GameType.TRHEE_HOODLE.getCode()){
+
+       } else if(info.getPropId() == E_GameType.ADD_SPEED.getCode()){
+
+       }
+    }
+
+
     private void addSprite() {
         addBg();
         addBalls(SpriteConfig.TAG_NORMAL_BALL);
+        addBalls(SpriteConfig.TAG_ADD_BALL1);
+        addBalls(SpriteConfig.TAG_ADD_BALL2);
         addMyHome();
         addOffsetHome();
-        addWall();
     }
-    /**
-     * 增加墙
-     */
-    private void addWall() {
-        float scaledWidth = screenWith/PTM_RATIO;
-        float scaledHeight = screenHeight/PTM_RATIO;
-        // Define the ground body.
-        BodyDef bxGroundBodyDef = new BodyDef();
-        bxGroundBodyDef.position.set(0.0f, 0.0f);
-
-        // Call the body factory which allocates memory for the ground body
-        // from a pool and creates the ground box shape (also from a pool).
-        // The body is also added to the world.
-        Body groundBody = bxWorld.createBody(bxGroundBodyDef);
-
-        // Define the ground box shape.
-        EdgeShape groundBox = new EdgeShape();
-
-        Vector2 bottomLeft = new Vector2(0f,0f);
-        Vector2 topLeft = new Vector2(0f,scaledHeight);
-        Vector2 topRight = new Vector2(scaledWidth,scaledHeight);
-        Vector2 bottomRight = new Vector2(scaledWidth,0f);
-
-        FixtureDef fixtureDef = new FixtureDef();
-        fixtureDef.shape = groundBox;
-        fixtureDef.density = 1.0f;
-        fixtureDef.friction = 0f;
-        fixtureDef.restitution = 1.0f;
-
-        // bottom
-        groundBox.set(bottomLeft, bottomRight);
-        groundBody.createFixture(fixtureDef);
-
-        // top
-        groundBox.set(topLeft, topRight);
-        groundBody.createFixture(fixtureDef);
-
-        // left
-        groundBox.set( topLeft, bottomLeft );
-        groundBody.createFixture(fixtureDef);
-
-        // right
-        groundBox.set( topRight, bottomRight );
-        groundBody.createFixture(fixtureDef);
-    }
-
-
     private void addBalls(int tag) {
         //添加球
-        ball = SpriteUtils.getSprite("marbles_ball.png", SpriteConfig.BALL_SIZE, SpriteConfig.BALL_SIZE, false, tag);
-        CGPoint ballPoint = CGPoint.ccp(screenWith / 2, screenHeight - (SpriteConfig.BALL_SIZE / 2 + SpriteConfig.NORMAL_BRICK_SIZE * 3 + SpriteConfig.NORMAL_CONTROL_BAR_H));
-        ball.setPosition(ballPoint);
+        CCSprite ball = SpriteUtils.getSprite("marbles_ball.png", SpriteConfig.BALL_SIZE, SpriteConfig.BALL_SIZE, false, tag);
+        if(tag == SpriteConfig.TAG_NORMAL_BALL){
+            CGPoint ballPoint = CGPoint.ccp(screenWith / 2, screenHeight - (SpriteConfig.BALL_SIZE / 2 + SpriteConfig.NORMAL_BRICK_SIZE * 3 + SpriteConfig.NORMAL_CONTROL_BAR_H));
+            ball.setPosition(ballPoint);
+        }else {
+            ball.setPosition(CGPoint.ccp(-200, -200));
+        }
         this.addChild(ball);
+    }
 
-        BodyDef bodyDef = new BodyDef();
-        bodyDef.type = BodyDef.BodyType.DynamicBody;
-        bodyDef.position.set(ballPoint.x / PTM_RATIO, ballPoint.y / PTM_RATIO);
-        CircleShape dynamicBox = new CircleShape();
-        dynamicBox.setRadius(SpriteConfig.BALL_SIZE / 2 / PTM_RATIO);//These are mid points for our 1m box
-        ballBody = bxWorld.createBody(bodyDef);
-        ballBody.setUserData(ball);
-        FixtureDef fixtureDef = new FixtureDef();
-        fixtureDef.shape = dynamicBox;
-        fixtureDef.density = 0f;
-        fixtureDef.friction = 0f;
-        fixtureDef.restitution = 0f;
-        ballBody.createFixture(fixtureDef);
+    /**
+     * 隐藏多余的球
+     */
+    private void hideMoreBall(){
+        CCSprite ball1 = (CCSprite) getChildByTag(SpriteConfig.TAG_ADD_BALL1);
+        if(ball1 != null){
+            ball1.setPosition(CGPoint.ccp(-200, -200));
+        }
 
-//        Vector2 linearVelocity = new Vector2();
-//        linearVelocity.x = 10;
-//        linearVelocity.y = 30;
-//        ballBody.setLinearVelocity(linearVelocity);
-
+        CCSprite ball2 = (CCSprite) getChildByTag(SpriteConfig.TAG_ADD_BALL2);
+        if(ball2 != null){
+            ball2.setPosition(CGPoint.ccp(-200, -200));
+        }
     }
 
     private void addBg() {
@@ -260,15 +242,13 @@ public class GameProjectionLayer extends BaseCCLayer{
                 brickBg.setPosition(point);
                 this.addChild(brickBg);
                 this.addChild(brick);
-                addToWorld(brickBg, SpriteConfig.NORMAL_BRICK_SIZE, SpriteConfig.NORMAL_BRICK_SIZE);
             }
         }
 
         //添加我的主堡垒
-        CCSprite spHome = SpriteUtils.getSprite("home.png", SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE, false, SpriteConfig.TAG_MY_NORMAL_HOME_BRICK);
+        CCSprite spHome = SpriteUtils.getSprite("app_logo.png", SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE, false, SpriteConfig.TAG_MY_NORMAL_HOME_BRICK);
         spHome.setPosition(CGPoint.ccp(screenWith / 2, SpriteConfig.NORMAL_HOME_BRICK_SIZE / 2));
         this.addChild(spHome);
-        addToWorld(spHome,  SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE);
 
 
         //添加杆子
@@ -276,22 +256,6 @@ public class GameProjectionLayer extends BaseCCLayer{
         CGPoint ccp = CGPoint.ccp(screenWith / 2, SpriteConfig.NORMAL_CONTROL_BAR_H / 2 + SpriteConfig.NORMAL_BRICK_SIZE * 3 + 10);
         myControlBar.setPosition(ccp);
         this.addChild(myControlBar);
-
-        BodyDef bodyDef = new BodyDef();
-        bodyDef.type = BodyDef.BodyType.StaticBody;
-        bodyDef.position.set(ccp.x / PTM_RATIO, ccp.y / PTM_RATIO);
-
-        PolygonShape dynamicBox = new PolygonShape();
-        dynamicBox.setAsBox(SpriteConfig.CONTROL_BAR_W / 2 / PTM_RATIO, SpriteConfig.NORMAL_CONTROL_BAR_H / 2 / PTM_RATIO);
-
-        myControlBarBody = bxWorld.createBody(bodyDef);
-        myControlBarBody.setUserData(myControlBar);
-        FixtureDef fixtureDef = new FixtureDef();
-        fixtureDef.shape = dynamicBox;
-        fixtureDef.density = 1000.0f;
-        fixtureDef.friction = 1f;
-        fixtureDef.restitution = 0f;
-        myControlBarBody.createFixture(fixtureDef);
     }
     private void addOffsetHome() {
         // 增加自己的砖块
@@ -325,7 +289,6 @@ public class GameProjectionLayer extends BaseCCLayer{
                 brickBg.setPosition(point);
                 this.addChild(brickBg);
                 this.addChild(brick);
-                addToWorld(brickBg, SpriteConfig.NORMAL_BRICK_SIZE, SpriteConfig.NORMAL_BRICK_SIZE);
             }
         }
 
@@ -333,54 +296,16 @@ public class GameProjectionLayer extends BaseCCLayer{
         CCSprite spHome = SpriteUtils.getSprite("app_logo.png", SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE, false, SpriteConfig.TAG_OFFSET_NORMAL_HOME_BRICK);
         spHome.setPosition(CGPoint.ccp(screenWith / 2, screenHeight - SpriteConfig.NORMAL_HOME_BRICK_SIZE / 2));
         this.addChild(spHome);
-        addToWorld(spHome, SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE);
         //添加杆子
         offsetControlBar = SpriteUtils.getSprite("marbles_baffle.png", SpriteConfig.CONTROL_BAR_W, SpriteConfig.NORMAL_CONTROL_BAR_H, false, SpriteConfig.TAG_OFFSET_NORMAL_CONTROL_BAR);
         CGPoint ccp = CGPoint.ccp(screenWith / 2,
                 screenHeight - (SpriteConfig.NORMAL_CONTROL_BAR_H / 2 + SpriteConfig.NORMAL_BRICK_SIZE * 3 + 10));
         offsetControlBar.setPosition(ccp);
         this.addChild(offsetControlBar);
-
-        BodyDef bodyDef = new BodyDef();
-        bodyDef.type = BodyDef.BodyType.StaticBody;
-        bodyDef.position.set(ccp.x / PTM_RATIO, ccp.y / PTM_RATIO);
-
-        PolygonShape dynamicBox = new PolygonShape();
-        dynamicBox.setAsBox(SpriteConfig.CONTROL_BAR_W / 2 / PTM_RATIO, SpriteConfig.NORMAL_CONTROL_BAR_H / 2 / PTM_RATIO);
-
-        offsetControlBarBody = bxWorld.createBody(bodyDef);
-        offsetControlBarBody.setUserData(offsetControlBar);
-        FixtureDef fixtureDef = new FixtureDef();
-        fixtureDef.shape = dynamicBox;
-        fixtureDef.density = 1000.0f;
-        fixtureDef.friction = 1f;
-        fixtureDef.restitution = 0f;
-        offsetControlBarBody.createFixture(fixtureDef);
     }
 
 
 
-    /**
-     * 添加到世界中
-     * @param ball
-     */
-    private Body addToWorld(CCSprite ball,int w , int h) {
-        CGPoint ballPoint = ball.getPosition();
-        BodyDef bodyDef = new BodyDef();
-        bodyDef.type = BodyDef.BodyType.StaticBody;
-        bodyDef.position.set(ballPoint.x / PTM_RATIO, ballPoint.y / PTM_RATIO);
-        PolygonShape dynamicBox = new PolygonShape();
-        dynamicBox.setAsBox(w / 2 / PTM_RATIO, h / 2 / PTM_RATIO);//These are mid points for our 1m box
-        Body body = bxWorld.createBody(bodyDef);
-        body.setUserData(ball);
-        FixtureDef fixtureDef = new FixtureDef();
-        fixtureDef.shape = dynamicBox;
-        fixtureDef.density = 1000.0f;
-        fixtureDef.friction = 0f;
-        fixtureDef.restitution = 0f;
-        body.createFixture(fixtureDef);
-        return body;
-    }
 
     @Override
     public void onEnter() {
@@ -402,48 +327,202 @@ public class GameProjectionLayer extends BaseCCLayer{
             tick(d);
         }
     };
-    public synchronized void tick(float delta) {
-        if ((rdelta += delta) < FPS) return;
 
-        synchronized (bxWorld) {
-            bxWorld.step(FPS, 8, 1);
+    private void tick(float d) {
+        if(result != null){
+            if(result.isWin()){
+                endLable = CCLabel.makeLabel("YOU WIN", CGSize.make(400, 400), CCLabel.TextAlignment.CENTER, "", 80);
+                endLable.setPosition(CGPoint.ccp(screenWith / 2, screenHeight / 2));
+                endLable.setColor(new ccColor3B(255, 255, 255));
+                this.addChild(endLable);
+            }else {
+                endLable = CCLabel.makeLabel("YOU LOSE",  CGSize.make(400, 400), CCLabel.TextAlignment.CENTER, "", 80);
+                endLable.setPosition(CGPoint.ccp(screenWith / 2, screenHeight / 2));
+                endLable.setColor(new ccColor3B(255, 255, 255));
+                this.addChild(endLable);
+            }
         }
-        rdelta = 0;
-        timeCount ++;
-        // Iterate over the bodies in the physics world
-        Iterator<Body> it = bxWorld.getBodies();
-        while(it.hasNext()) {
-            Body b = it.next();
-            Object userData = b.getUserData();
-            if (userData != null && userData instanceof CCSprite) {
-                //Synchronize the Sprites position and rotation with the corresponding body
-                final CCSprite sprite = (CCSprite)userData;
-                final Vector2 pos = b.getPosition();
-                if(sprite != null && balls.contains(sprite.getTag())){ // 球的运动
-//                    long now = System.currentTimeMillis();
-//                    if(time != 0 && direction != null){
-//                        CGPoint point = SpriteUtils.getNewPoint(sprite.getPosition(), direction.x, direction.y, (now - time) * 1.0f / 1000);
-//                        sprite.setPosition(point);
-//                        Vector2 vector2 = new Vector2(point.x  / PTM_RATIO, point.y/ PTM_RATIO);
-//                        b.setTransform(vector2,b.getAngle());
-//                    }
-//                    time = now;
-                    Location location = queue.poll();
-                    if(location != null){
-                        CGPoint point = CGPoint.ccp((1 - location.getX()) * screenWith,
-                                (1 - location.getY()) * screenHeight);
-//                        ball.setPosition(point);
-                        CCMoveTo moveTo = CCMoveTo.action(delta,point);
-                        ball.runAction(moveTo);
-                    }
-                    if(timeCount > 60){
-                        timeCount = 0;
-                        queue.clear();
-                    }
+
+        if(battleBrick != null){
+            CGPoint point  = CGPoint.getZero();
+            CCSprite sprite = (CCSprite) getChildByTag(battleBrick.getId());
+            if(sprite != null){
+                point = sprite.getPosition();
+            }
+            removeChildByTag(battleBrick.getId(),true);
+            removeChildByTag(battleBrick.getId() - 50, true);
+            // 查看是否接到道具
+            if(battleBrick.getId() < 200 && battleBrick.getId() > 100){ // 他人的
+                BattleInitInfo.InitiativeUserBean.BlockListBean brick = null;
+                int index = battleBrick.getId() % 100 - 1;
+                CCSprite spProp = null;
+                brick = offsetBatter.getBlockList().get(index);
+                if(brick.getPropType() == E_GameType.ADD_SPEED.getCode()){
+                    spProp = SpriteUtils.getSprite("marbles_prop_03.png",SpriteConfig.PROP_SIZE, SpriteConfig.PROP_SIZE,false, brick.getPropType());
+                    spProp.setPosition(point);
+                    this.addChild(spProp);
+                }else if(brick.getPropType() == E_GameType.ADD_WIDTH.getCode()){
+                    spProp = SpriteUtils.getSprite("marbles_prop_01.png",SpriteConfig.PROP_SIZE, SpriteConfig.PROP_SIZE,false, brick.getPropType());
+                    spProp.setPosition(point);
+                    this.addChild(spProp);
+                }else if(brick.getPropType() == E_GameType.TRHEE_HOODLE.getCode()){
+                    spProp = SpriteUtils.getSprite("marbles_prop_02.png",SpriteConfig.PROP_SIZE, SpriteConfig.PROP_SIZE,false, brick.getPropType());
+                    spProp.setPosition(point);
+                    this.addChild(spProp);
                 }
+            }
+            battleBrick = null;
+        }
+        catchProp();
+    }
+
+    /**
+     * 接住道具
+     */
+    private void catchProp() {
+        CCSprite spAddWidth = (CCSprite) this.getChildByTag(E_GameType.ADD_WIDTH.getCode());
+        CCSprite spMoreBall = (CCSprite) this.getChildByTag(E_GameType.TRHEE_HOODLE.getCode());
+        CCSprite spAddSpeed = (CCSprite) this.getChildByTag(E_GameType.ADD_SPEED.getCode());
+        if(spAddWidth != null){
+            //判断是否接住
+            if(SpriteUtils.isSpriteConfict(myControlBar, SpriteConfig.CONTROL_BAR_W, SpriteConfig.NORMAL_CONTROL_BAR_H,
+                    spAddWidth, SpriteConfig.PROP_SIZE, SpriteConfig.PROP_SIZE)){
+                Log.i(TAG, "接住");
+                spAddWidth.removeSelf();
+                // 横杆变大
+                SpriteConfig.CONTROL_BAR_W = SpriteConfig.EXPEND_CONTROL_BAR_W;
+                changeControlBarSize();
+                schedule("expendLager", 1);
+
+                MsgData msgData = new MsgData();
+                msgData.setCode(RequestCode.BATTLE_DATA_GET_PROP);
+                msgData.setData(new PropStatusInfo(E_GameType.ADD_WIDTH.getCode(), true));
+                MySocket.getInstance().setMessage(msgData);
+            }
+            CGPoint point = spAddWidth.getPosition();
+            point.y = point.y-10;
+            spAddWidth.setPosition(point);
+            Log.i(TAG, point.toString());
+            if(point.y < -100){
+                spAddWidth.removeSelf();
+            }
+        }
+
+        if(spMoreBall != null){
+            //判断是否接住
+            if(SpriteUtils.isSpriteConfict(myControlBar, SpriteConfig.CONTROL_BAR_W, SpriteConfig.NORMAL_CONTROL_BAR_H,
+                    spMoreBall, SpriteConfig.PROP_SIZE, SpriteConfig.PROP_SIZE)){
+                Log.i(TAG, "接住");
+                spMoreBall.removeSelf();
+                // 多球
+                schedule("moreBall", 1);
+
+                MsgData msgData = new MsgData();
+                msgData.setCode(RequestCode.BATTLE_DATA_GET_PROP);
+                msgData.setData(new PropStatusInfo(E_GameType.TRHEE_HOODLE.getCode(), true));
+                MySocket.getInstance().setMessage(msgData);
+            }
+            CGPoint point = spMoreBall.getPosition();
+            point.y = point.y-10;
+            spMoreBall.setPosition(point);
+            Log.i(TAG, point.toString());
+            if(point.y < -100){
+                spMoreBall.removeSelf();
+            }
+        }
+
+        if(spAddSpeed != null){
+            //判断是否接住
+            if(SpriteUtils.isSpriteConfict(myControlBar, SpriteConfig.CONTROL_BAR_W, SpriteConfig.NORMAL_CONTROL_BAR_H,
+                    spAddSpeed, SpriteConfig.PROP_SIZE, SpriteConfig.PROP_SIZE)){
+                Log.i(TAG, "接住");
+                spAddSpeed.removeSelf();
+                // 加速
+                schedule("acclerate", 1);
+
+                MsgData msgData = new MsgData();
+                msgData.setCode(RequestCode.BATTLE_DATA_GET_PROP);
+                msgData.setData(new PropStatusInfo(E_GameType.ADD_SPEED.getCode(), true));
+                MySocket.getInstance().setMessage(msgData);
+            }
+            CGPoint point = spAddSpeed.getPosition();
+            point.y = point.y-10;
+            spAddSpeed.setPosition(point);
+            Log.i(TAG, point.toString());
+            if(point.y < -100){
+                spAddSpeed.removeSelf();
             }
         }
     }
+
+
+    private void setNum() {
+        if(subNum != null){
+            subNum.removeSelf();
+        }
+        if(bgNum == null){
+            bgNum = SpriteUtils.getSprite("marbles_base_number.png",screenWith,128,false,-1);
+            bgNum.setPosition(CGPoint.ccp(screenWith /2, screenHeight / 2));
+            this.addChild(bgNum);
+        }
+
+        //添加数字
+        subNum = SpriteUtils.getSprite(timeCount +".png", 29, 70,false, -1);
+        subNum.setPosition(CGPoint.ccp(screenWith /2 + 30 ,screenHeight/2));
+        this.addChild(subNum);
+    }
+
+
+
+    // ***************************道具持续的时间***************************************************
+    private int expendLagerSecond = 0;
+    public void expendLager(float dx){
+        expendLagerSecond ++;
+        if(expendLagerSecond > 10){ // 结束道具
+            expendLagerSecond = 0;
+            SpriteConfig.CONTROL_BAR_W = SpriteConfig.NORMAL_CONTROL_BAR_W;
+            changeControlBarSize();
+            unschedule("expendLager");
+
+            MsgData msgData = new MsgData();
+            msgData.setCode(RequestCode.BATTLE_DATA_GET_PROP);
+            msgData.setData(new PropStatusInfo(E_GameType.ADD_WIDTH.getCode(), false));
+            MySocket.getInstance().setMessage(msgData);
+        }
+    }
+
+    private void changeControlBarSize() {
+        myControlBar.setScaleX((SpriteConfig.CONTROL_BAR_W) / myControlBar.getContentSize().width);
+    }
+
+    private int moreBallSecond = 0;
+    public void moreBall(float dx){
+        moreBallSecond ++;
+        if(moreBallSecond > 10){ // 结束道具
+            moreBallSecond = 0;
+            unschedule("moreBall");
+            hideMoreBall();
+            MsgData msgData = new MsgData();
+            msgData.setCode(RequestCode.BATTLE_DATA_GET_PROP);
+            msgData.setData(new PropStatusInfo(E_GameType.TRHEE_HOODLE.getCode(), false));
+            MySocket.getInstance().setMessage(msgData);
+        }
+    }
+
+    private int acclerateSecond = 0;
+    public void acclerate(float dx){
+        acclerateSecond ++;
+        if(acclerateSecond > 10){ // 结束道具
+            acclerateSecond = 0;
+            unschedule("acclerate");
+
+            MsgData msgData = new MsgData();
+            msgData.setCode(RequestCode.BATTLE_DATA_GET_PROP);
+            msgData.setData(new PropStatusInfo(E_GameType.ADD_SPEED.getCode(), false));
+            MySocket.getInstance().setMessage(msgData);
+        }
+    }
+    // ***************************道具持续的时间***************************************************
 
 
     //***********************************触摸事件********************************************************
@@ -470,7 +549,7 @@ public class GameProjectionLayer extends BaseCCLayer{
             MsgData msgData = new MsgData();
             msgData.setCode(RequestCode.BATTLE_DATA_STICK);
             msgData.setData(new ControlBarInfo(p2.x/screenWith));
-            MySocket.getInstance().setMessage(msgData);
+            MySocket.getInstance().setUdpMessage(msgData);
         }
         return super.ccTouchesBegan(event);
     }
@@ -496,7 +575,7 @@ public class GameProjectionLayer extends BaseCCLayer{
             MsgData msgData = new MsgData();
             msgData.setCode(RequestCode.BATTLE_DATA_STICK);
             msgData.setData(new ControlBarInfo(p2.x/screenWith));
-            MySocket.getInstance().setMessage(msgData);
+            MySocket.getInstance().setUdpMessage(msgData);
         }
         return super.ccTouchesMoved(event);
     }
@@ -506,7 +585,17 @@ public class GameProjectionLayer extends BaseCCLayer{
      */
     @Override
     public boolean ccTouchesEnded(MotionEvent event) {
-//        myControlBar.runAction(CCHide.action());
+        if(endLable != null){
+            float x = event.getX();
+            float y = event.getY();
+            CGPoint p1 = CGPoint.ccp(x, y);
+            // 将以左上角为原点的坐标转换为以左下角为原点的坐标
+            CGPoint p2 = CCDirector.sharedDirector().convertToGL(p1);
+            CGRect rect = SpriteUtils.getSpriteRect(endLable, 400, 400);
+            if(rect.contains(p2.x, p2.y)){
+                goToNext();
+            }
+        }
         return super.ccTouchesEnded(event);
     }
 

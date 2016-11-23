@@ -78,7 +78,16 @@ public class StartPageLayer extends BaseCCLayer{
     public boolean ccTouchesEnded(MotionEvent event) {
         startButtonUp.runAction(CCShow.action());
         startButtonDown.runAction(CCHide.action());
-       goToNext();
+
+        float x = event.getX();
+        float y = event.getY();
+        CGPoint p1 = CGPoint.ccp(x, y);
+        // 将以左上角为原点的坐标转换为以左下角为原点的坐标
+        CGPoint p2 = CCDirector.sharedDirector().convertToGL(p1);
+        CGRect rect = SpriteUtils.getSpriteRect(startButtonUp, 334, 334);
+        if(rect.contains(p2.x, p2.y)){
+            goToNext();
+        }
         return super.ccTouchesEnded(event);
     }
 }

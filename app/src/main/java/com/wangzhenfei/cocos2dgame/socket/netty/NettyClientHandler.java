@@ -5,10 +5,13 @@ import android.util.Log;
 
 import com.wangzhenfei.cocos2dgame.model.BattleBall;
 import com.wangzhenfei.cocos2dgame.model.BattleBrick;
+import com.wangzhenfei.cocos2dgame.model.BattleEndResponse;
 import com.wangzhenfei.cocos2dgame.model.BattleInitInfo;
 import com.wangzhenfei.cocos2dgame.model.BattleNotifyResponse;
 import com.wangzhenfei.cocos2dgame.model.ControlBarInfo;
+import com.wangzhenfei.cocos2dgame.model.GameResult;
 import com.wangzhenfei.cocos2dgame.model.Location;
+import com.wangzhenfei.cocos2dgame.model.PropStatusInfo;
 import com.wangzhenfei.cocos2dgame.model.UserInfo;
 import com.wangzhenfei.cocos2dgame.socket.RequestCode;
 import com.wangzhenfei.cocos2dgame.tool.JsonUtils;
@@ -76,6 +79,15 @@ public class NettyClientHandler extends ChannelHandlerAdapter {
             case RequestCode.BATTLE_DATA_BUMP:
                 BattleBrick brick = JsonUtils.fromJSON(BattleBrick.class, data);
                 EventBus.getDefault().postSticky(brick);
+                break;
+            case RequestCode.BATTLE_DATA_GET_PROP:
+                PropStatusInfo statusInfo = JsonUtils.fromJSON(PropStatusInfo.class, data);
+                EventBus.getDefault().post(statusInfo);
+                break;
+            case RequestCode.BATTLE_END:
+                BattleEndResponse endResponse = JsonUtils.fromJSON(BattleEndResponse.class, data);
+                GameResult result = new GameResult(endResponse.getWinId());
+                EventBus.getDefault().post(result);
                 break;
             default:
                 Log.i(TAG,"返回错误:" + rev);
