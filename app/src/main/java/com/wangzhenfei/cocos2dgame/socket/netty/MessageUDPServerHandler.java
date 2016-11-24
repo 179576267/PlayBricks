@@ -84,8 +84,11 @@ public class MessageUDPServerHandler extends SimpleChannelInboundHandler<Datagra
         cause.printStackTrace();
     }
 
+    private int times;
     @Override
     protected void messageReceived(ChannelHandlerContext ctx, DatagramPacket datagramPacket) throws Exception {
+        times ++;
+        Log.i("MessageUDPServerHandler", times + "");
         String rec = datagramPacket.content().toString(CharsetUtil.UTF_8);
         Log.i(TAG, "返回信息:\n" + JsonUtils.format(rec));
         JSONObject json = new JSONObject(rec);

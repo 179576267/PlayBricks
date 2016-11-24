@@ -43,8 +43,9 @@ public class BattleInitInfo {
     public static class InitiativeUserBean {
         private int id;
         private String name;
-        private String avatar;
+        private String avatar = "app_logo.png";
         private String ip;
+        private int udpPort;
         /**
          * id : 101
          * type : 0
@@ -55,6 +56,14 @@ public class BattleInitInfo {
 
         public String getIp() {
             return ip;
+        }
+
+        public int getUdpPort() {
+            return udpPort;
+        }
+
+        public void setUdpPort(int udpPort) {
+            this.udpPort = udpPort;
         }
 
         public void setIp(String ip) {

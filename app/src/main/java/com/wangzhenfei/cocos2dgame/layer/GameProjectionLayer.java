@@ -3,10 +3,6 @@ package com.wangzhenfei.cocos2dgame.layer;
 import android.util.Log;
 import android.view.MotionEvent;
 
-import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.physics.box2d.Body;
-import com.badlogic.gdx.physics.box2d.Fixture;
-import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.wangzhenfei.cocos2dgame.SpriteConfig;
 import com.wangzhenfei.cocos2dgame.model.BattleBall;
 import com.wangzhenfei.cocos2dgame.model.BattleBrick;
@@ -14,7 +10,6 @@ import com.wangzhenfei.cocos2dgame.model.BattleInitInfo;
 import com.wangzhenfei.cocos2dgame.model.ControlBarInfo;
 import com.wangzhenfei.cocos2dgame.model.E_GameType;
 import com.wangzhenfei.cocos2dgame.model.GameResult;
-import com.wangzhenfei.cocos2dgame.model.Location;
 import com.wangzhenfei.cocos2dgame.model.PropStatusInfo;
 import com.wangzhenfei.cocos2dgame.model.UserInfo;
 import com.wangzhenfei.cocos2dgame.socket.MsgData;
@@ -33,7 +28,6 @@ import org.cocos2d.types.CGSize;
 import org.cocos2d.types.ccColor3B;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import de.greenrobot.event.EventBus;
@@ -61,6 +55,7 @@ public class GameProjectionLayer extends BaseCCLayer{
     public GameProjectionLayer(BattleInitInfo info) {
         super();
         EventBus.getDefault().register(this);
+        SpriteConfig.CONTROL_BAR_W = SpriteConfig.NORMAL_CONTROL_BAR_W;
         this.setIsTouchEnabled(true);
         if(UserInfo.info.getId() == info.getInitiativeUser().getId()){
             myBatter = info.getInitiativeUser();
@@ -70,6 +65,7 @@ public class GameProjectionLayer extends BaseCCLayer{
             offsetBatter = info.getInitiativeUser();
         }
         MySocket.getInstance().ip = offsetBatter.getIp();
+        MySocket.getInstance().port = offsetBatter.getUdpPort();
 
         addSprite();
         balls.add(SpriteConfig.TAG_ADD_BALL1);
@@ -246,7 +242,7 @@ public class GameProjectionLayer extends BaseCCLayer{
         }
 
         //添加我的主堡垒
-        CCSprite spHome = SpriteUtils.getSprite("app_logo.png", SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE, false, SpriteConfig.TAG_MY_NORMAL_HOME_BRICK);
+        CCSprite spHome = SpriteUtils.getSprite(myBatter.getAvatar(), SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE, false, SpriteConfig.TAG_MY_NORMAL_HOME_BRICK);
         spHome.setPosition(CGPoint.ccp(screenWith / 2, SpriteConfig.NORMAL_HOME_BRICK_SIZE / 2));
         this.addChild(spHome);
 
@@ -293,7 +289,7 @@ public class GameProjectionLayer extends BaseCCLayer{
         }
 
         //添加他人的主堡垒
-        CCSprite spHome = SpriteUtils.getSprite("app_logo.png", SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE, false, SpriteConfig.TAG_OFFSET_NORMAL_HOME_BRICK);
+        CCSprite spHome = SpriteUtils.getSprite(offsetBatter.getAvatar(), SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE, false, SpriteConfig.TAG_OFFSET_NORMAL_HOME_BRICK);
         spHome.setPosition(CGPoint.ccp(screenWith / 2, screenHeight - SpriteConfig.NORMAL_HOME_BRICK_SIZE / 2));
         this.addChild(spHome);
         //添加杆子
@@ -400,7 +396,7 @@ public class GameProjectionLayer extends BaseCCLayer{
                 MySocket.getInstance().setMessage(msgData);
             }
             CGPoint point = spAddWidth.getPosition();
-            point.y = point.y-10;
+            point.y = point.y-5;
             spAddWidth.setPosition(point);
             Log.i(TAG, point.toString());
             if(point.y < -100){
@@ -423,7 +419,7 @@ public class GameProjectionLayer extends BaseCCLayer{
                 MySocket.getInstance().setMessage(msgData);
             }
             CGPoint point = spMoreBall.getPosition();
-            point.y = point.y-10;
+            point.y = point.y-5;
             spMoreBall.setPosition(point);
             Log.i(TAG, point.toString());
             if(point.y < -100){
@@ -446,7 +442,7 @@ public class GameProjectionLayer extends BaseCCLayer{
                 MySocket.getInstance().setMessage(msgData);
             }
             CGPoint point = spAddSpeed.getPosition();
-            point.y = point.y-10;
+            point.y = point.y-5;
             spAddSpeed.setPosition(point);
             Log.i(TAG, point.toString());
             if(point.y < -100){

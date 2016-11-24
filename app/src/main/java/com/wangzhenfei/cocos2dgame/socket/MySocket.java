@@ -4,6 +4,7 @@ import android.util.Log;
 
 import com.wangzhenfei.cocos2dgame.socket.netty.NettyClientHandler;
 import com.wangzhenfei.cocos2dgame.socket.netty.NettyUDPServer;
+import com.wangzhenfei.cocos2dgame.tool.ByteUtils;
 import com.wangzhenfei.cocos2dgame.tool.JsonUtils;
 import com.wangzhenfei.cocos2dgame.tool.Utils;
 
@@ -36,9 +37,15 @@ public class MySocket {
 
     private static MySocket mInstance;
     public static String  ip = "";
+    public static int port ;
     private SocketChannel socketChannel;
-    DatagramSocket client;
+    private  DatagramSocket client;
     private MySocket(){
+        try {
+            client = new DatagramSocket();
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
     }
 
     public void initSocket() {
@@ -57,9 +64,7 @@ public class MySocket {
             public void run() {
                 // 初始化客户端链接
                 EventLoopGroup eventLoopGroup = new NioEventLoopGroup();
-
                 try {
-
                     Bootstrap bootstrap = new Bootstrap();
                     bootstrap.channel(NioSocketChannel.class);
                     bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
@@ -142,32 +147,57 @@ public class MySocket {
     }
 
 
+    private int times;
     public void setUdpMessage(Object s){
+        times ++;
+        Log.i("MySocket", times + "");
         if(client == null){
             try {
-                DatagramSocket client = new DatagramSocket();
-                client.setSoTimeout(3000);
-                InetAddress address = InetAddress.getByName(ip);
-                String str = JsonUtils.toJson(s);
-                byte[] data = str.getBytes("UTF-8");
-                DatagramPacket sendPacket = new DatagramPacket(data, data.length, address,8888);
-                client.send(sendPacket);
-
+                client = new DatagramSocket();
             } catch (SocketException e) {
-                e.printStackTrace();
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+        try {
+            client.setSoTimeout(3000);
+            InetAddress address = InetAddress.getByName(ip);
+            String str = JsonUtils.toJson(s);
+            byte[] data = str.getBytes("UTF-8");
+            DatagramPacket sendPacket = new DatagramPacket(data, data.length, address,8888);
+            client.send(sendPacket);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
 
+    public void setUdpMessageToServet(int id){
+        if(client == null){
+            try {
+                client = new DatagramSocket();
+            } catch (SocketException e) {
+                e.printStackTrace();
+            }
+        }
+        try {
+            client.setSoTimeout(3000);
+            InetAddress address = InetAddress.getByName(RequestCode.UDP_IP);
+//            byte [] data = ByteUtils.intToBytes(id);
+            byte[] data = (id + "").getBytes();
+            DatagramPacket sendPacket = new DatagramPacket(data, data.length, address,RequestCode.UDP_PORT);
+            client.send(sendPacket);
 
-
-
+        }  catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     //*********************************api*************************************************

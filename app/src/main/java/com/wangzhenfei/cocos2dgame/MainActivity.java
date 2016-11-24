@@ -46,4 +46,10 @@ public class MainActivity extends Activity {
         // Make the Scene active
         CCDirector.sharedDirector().runWithScene(scene);
     }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+    }
+
 }

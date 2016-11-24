@@ -11,6 +11,9 @@ public class RequestCode {
     public final static int PORT = 2817;
 //    public final static int PORT = 9999;
 
+    public final static String UDP_IP = "192.168.2.121";
+    public final static int UDP_PORT = 2818;
+
     /**
      * 登录
      */
@@ -20,6 +23,11 @@ public class RequestCode {
      * 登出
      */
     public final static int LOGOUT = 1002;
+
+    /**
+     * 登出
+     */
+    public final static int STOP = 1003;
 
     /**
      * 开始对战

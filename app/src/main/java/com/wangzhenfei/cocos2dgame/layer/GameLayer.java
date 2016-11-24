@@ -92,6 +92,7 @@ public class GameLayer extends BaseCCLayer{
             offsetBatter = info.getInitiativeUser();
         }
         MySocket.getInstance().ip = offsetBatter.getIp();
+        MySocket.getInstance().port = offsetBatter.getUdpPort();
         EventBus.getDefault().register(this);
         this.setIsTouchEnabled(true);
         balls.add(SpriteConfig.TAG_ADD_BALL1);
@@ -190,8 +191,8 @@ public class GameLayer extends BaseCCLayer{
                 bgNum.removeSelf();
             }
             Vector2 vector2 = new Vector2();
-            vector2.x = 20;
-            vector2.y = 20;
+            vector2.x = 30;
+            vector2.y = 30;
             ballBody.setLinearVelocity(vector2);
             start = true;
             unschedule("startMinus");
@@ -303,31 +304,31 @@ public class GameLayer extends BaseCCLayer{
 
     private void dealContact(Body body, int tag) {
         CCSprite sprite = (CCSprite) body.getUserData();
-        if(tag == E_GameType.MY_MASTER.getCode()){// 我输了
-            endLable = CCLabel.makeLabel("YOU LOSE",  CGSize.make(400, 400), CCLabel.TextAlignment.CENTER, "", 80);
-            endLable.setPosition(CGPoint.ccp(screenWith / 2, screenHeight / 2));
-            endLable.setColor(new ccColor3B(255, 255, 255));
-            this.addChild(endLable);
-            start = false;
-
-            MsgData msgData = new MsgData();
-            msgData.setCode(RequestCode.BATTLE_END);
-            msgData.setData(new BattleEndRequest(offsetBatter.getId()));
-            MySocket.getInstance().setMessage(msgData);
-            return;
-        }else if(tag == E_GameType.OPPOSITE_MASTER.getCode()){// 对方输了
-            endLable = CCLabel.makeLabel("YOU WIN", CGSize.make(400, 400), CCLabel.TextAlignment.CENTER, "", 80);
-            endLable.setPosition(CGPoint.ccp(screenWith / 2, screenHeight / 2));
-            endLable.setColor(new ccColor3B(255, 255, 255));
-            this.addChild(endLable);
-            start = false;
-
-            MsgData msgData = new MsgData();
-            msgData.setCode(RequestCode.BATTLE_END);
-            msgData.setData(new BattleEndRequest(myBatter.getId()));
-            MySocket.getInstance().setMessage(msgData);
-            return;
-        }
+//        if(tag == E_GameType.MY_MASTER.getCode()){// 我输了
+//            endLable = CCLabel.makeLabel("YOU LOSE",  CGSize.make(400, 400), CCLabel.TextAlignment.CENTER, "", 80);
+//            endLable.setPosition(CGPoint.ccp(screenWith / 2, screenHeight / 2));
+//            endLable.setColor(new ccColor3B(255, 255, 255));
+//            this.addChild(endLable);
+//            start = false;
+//
+//            MsgData msgData = new MsgData();
+//            msgData.setCode(RequestCode.BATTLE_END);
+//            msgData.setData(new BattleEndRequest(offsetBatter.getId()));
+//            MySocket.getInstance().setMessage(msgData);
+//            return;
+//        }else if(tag == E_GameType.OPPOSITE_MASTER.getCode()){// 对方输了
+//            endLable = CCLabel.makeLabel("YOU WIN", CGSize.make(400, 400), CCLabel.TextAlignment.CENTER, "", 80);
+//            endLable.setPosition(CGPoint.ccp(screenWith / 2, screenHeight / 2));
+//            endLable.setColor(new ccColor3B(255, 255, 255));
+//            this.addChild(endLable);
+//            start = false;
+//
+//            MsgData msgData = new MsgData();
+//            msgData.setCode(RequestCode.BATTLE_END);
+//            msgData.setData(new BattleEndRequest(myBatter.getId()));
+//            MySocket.getInstance().setMessage(msgData);
+//            return;
+//        }
         if(tag < 1000 && tag > 50){ // 是砖块的碰撞
             BattleInitInfo.InitiativeUserBean.BlockListBean brick = null;
             if(tag > 200){ // 他人的
@@ -466,7 +467,7 @@ public class GameLayer extends BaseCCLayer{
         }
 
         //添加我的主堡垒
-        CCSprite spHome = SpriteUtils.getSprite("app_logo.png", SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE, false, E_GameType.MY_MASTER.getCode());
+        CCSprite spHome = SpriteUtils.getSprite(myBatter.getAvatar(), SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE, false, E_GameType.MY_MASTER.getCode());
         spHome.setPosition(CGPoint.ccp(screenWith / 2, SpriteConfig.NORMAL_HOME_BRICK_SIZE / 2));
         this.addChild(spHome);
         addToWorld(spHome, BodyDef.BodyType.StaticBody, SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE);
@@ -578,7 +579,7 @@ public class GameLayer extends BaseCCLayer{
         }
 
         //添加他人的主堡垒
-        CCSprite spHome = SpriteUtils.getSprite("app_logo.png", SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE, false, E_GameType.OPPOSITE_MASTER.getCode());
+        CCSprite spHome = SpriteUtils.getSprite(offsetBatter.getAvatar(), SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE, false, E_GameType.OPPOSITE_MASTER.getCode());
         spHome.setPosition(CGPoint.ccp(screenWith / 2, screenHeight - SpriteConfig.NORMAL_HOME_BRICK_SIZE / 2));
         this.addChild(spHome);
         addToWorld(spHome, BodyDef.BodyType.StaticBody, SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE);
@@ -608,6 +609,8 @@ public class GameLayer extends BaseCCLayer{
         offsetControlBarBody.createFixture(fixtureDef);
     }
 
+
+
     private void addBg() {
         // 增加背景
         CCSprite bg = SpriteUtils.getSprite("marbles_background_02.png", screenWith, screenHeight, true, -1);
@@ -634,9 +637,15 @@ public class GameLayer extends BaseCCLayer{
             tick(d);
         }
     };
+    private int second = 0;
     public synchronized void tick(float delta) {
-        if(!start){
+        if(!start ){
             return;
+        }
+
+        second ++;
+        if(second == 60){
+            second  = 0;
         }
 
         if(result != null){
@@ -679,6 +688,11 @@ public class GameLayer extends BaseCCLayer{
                 final Vector2 pos = b.getPosition();
                 if(balls.contains(sprite.getTag()) && start){ // 球的运动
                     Vector2 linearVelocity = b.getLinearVelocity();
+                    if(second == 59){
+                        linearVelocity.x *= (1 + 0.017);
+                        linearVelocity.y *= (1 + 0.017);
+                    }
+
                     sprite.setPosition(pos.x * PTM_RATIO, pos.y * PTM_RATIO);
                     if(Math.abs(linearVelocity.y) < 1){
                         if(sprite.getPosition().y > screenHeight / 2){
@@ -704,7 +718,7 @@ public class GameLayer extends BaseCCLayer{
                         linearVelocity.y /= 2 ;
                         acclerate = 0;
                     }
-                    ballBody.setLinearVelocity(linearVelocity);
+                    b.setLinearVelocity(linearVelocity);
                 }
             }else if(userData != null && userData instanceof GameLayer){ // 销毁
                 bxWorld.destroyBody(b);
