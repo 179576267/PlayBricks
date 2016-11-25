@@ -1,9 +1,13 @@
 package com.wangzhenfei.cocos2dgame.layer;
 
+import android.graphics.Bitmap;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.util.Log;
 import android.view.MotionEvent;
 
-import com.wangzhenfei.cocos2dgame.SpriteConfig;
+import com.wangzhenfei.cocos2dgame.config.SpriteConfig;
 import com.wangzhenfei.cocos2dgame.model.BattleBall;
 import com.wangzhenfei.cocos2dgame.model.BattleBrick;
 import com.wangzhenfei.cocos2dgame.model.BattleInitInfo;
@@ -11,20 +15,19 @@ import com.wangzhenfei.cocos2dgame.model.ControlBarInfo;
 import com.wangzhenfei.cocos2dgame.model.E_GameType;
 import com.wangzhenfei.cocos2dgame.model.GameResult;
 import com.wangzhenfei.cocos2dgame.model.PropStatusInfo;
-import com.wangzhenfei.cocos2dgame.model.UserInfo;
+import com.wangzhenfei.cocos2dgame.model.SaveUserInfo;
 import com.wangzhenfei.cocos2dgame.socket.MsgData;
 import com.wangzhenfei.cocos2dgame.socket.MySocket;
-import com.wangzhenfei.cocos2dgame.socket.RequestCode;
+import com.wangzhenfei.cocos2dgame.config.RequestCode;
+import com.wangzhenfei.cocos2dgame.tool.AsyTaskForLoadNetPicture;
 import com.wangzhenfei.cocos2dgame.tool.SpriteUtils;
 
 import org.cocos2d.actions.UpdateCallback;
 import org.cocos2d.layers.CCScene;
 import org.cocos2d.nodes.CCDirector;
-import org.cocos2d.nodes.CCLabel;
 import org.cocos2d.nodes.CCSprite;
 import org.cocos2d.types.CGPoint;
 import org.cocos2d.types.CGRect;
-import org.cocos2d.types.CGSize;
 import org.cocos2d.types.ccColor3B;
 
 import java.util.ArrayList;
@@ -37,6 +40,9 @@ import de.greenrobot.event.EventBus;
  * 游戏镜像世界
  */
 public class GameProjectionLayer extends BaseCCLayer{
+    private final int MY_AVATAR = 0X465A;
+    private final int OPPO_AVATAR = 0X465D;
+
     private BattleInitInfo.InitiativeUserBean myBatter;
     private BattleInitInfo.InitiativeUserBean offsetBatter;
     // 自己的
@@ -46,18 +52,20 @@ public class GameProjectionLayer extends BaseCCLayer{
     // 球的集合
     private List<Integer> balls = new ArrayList<Integer>();
 
-    CCLabel endLable;
+    CCSprite spEnd;
 
     private CCSprite subNum;
     private CCSprite bgNum;
     private int timeCount = 5;
+    private Bitmap mBitmap;
+    private Bitmap oBitmap;
 
     public GameProjectionLayer(BattleInitInfo info) {
         super();
         EventBus.getDefault().register(this);
         SpriteConfig.CONTROL_BAR_W = SpriteConfig.NORMAL_CONTROL_BAR_W;
         this.setIsTouchEnabled(true);
-        if(UserInfo.info.getId() == info.getInitiativeUser().getId()){
+        if(SaveUserInfo.getInstance().getId() == info.getInitiativeUser().getId()){
             myBatter = info.getInitiativeUser();
             offsetBatter = info.getPassivityUser();
         }else {
@@ -72,7 +80,26 @@ public class GameProjectionLayer extends BaseCCLayer{
         balls.add(SpriteConfig.TAG_ADD_BALL2);
         balls.add(SpriteConfig.TAG_NORMAL_BALL);
         schedule("startMinus", 1);
+        uploadAvatar();
     }
+
+    private void uploadAvatar() {
+        new AsyTaskForLoadNetPicture() {
+            @Override
+            public void onResult(Bitmap bitmap) {
+                oBitmap = bitmap;
+
+            }
+        }.execute(SaveUserInfo.getInstance().getResourceShowPath() + offsetBatter.getAvatar());
+
+        new AsyTaskForLoadNetPicture() {
+            @Override
+            public void onResult(Bitmap bitmap) {
+                    mBitmap = bitmap;
+            }
+        }.execute(SaveUserInfo.getInstance().getResourceShowPath() + myBatter.getAvatar());
+    }
+
 
     public void startMinus(float rdelta){
         if(timeCount == 0){
@@ -242,9 +269,11 @@ public class GameProjectionLayer extends BaseCCLayer{
         }
 
         //添加我的主堡垒
-        CCSprite spHome = SpriteUtils.getSprite(myBatter.getAvatar(), SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE, false, SpriteConfig.TAG_MY_NORMAL_HOME_BRICK);
+         CCSprite spHome = SpriteUtils.getSprite("app_logo.png", SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE, false, E_GameType.MY_MASTER.getCode());
         spHome.setPosition(CGPoint.ccp(screenWith / 2, SpriteConfig.NORMAL_HOME_BRICK_SIZE / 2));
         this.addChild(spHome);
+
+
 
 
         //添加杆子
@@ -289,9 +318,10 @@ public class GameProjectionLayer extends BaseCCLayer{
         }
 
         //添加他人的主堡垒
-        CCSprite spHome = SpriteUtils.getSprite(offsetBatter.getAvatar(), SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE, false, SpriteConfig.TAG_OFFSET_NORMAL_HOME_BRICK);
+        CCSprite spHome = SpriteUtils.getSprite("app_logo.png", SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE, false, E_GameType.OPPOSITE_MASTER.getCode());
         spHome.setPosition(CGPoint.ccp(screenWith / 2, screenHeight - SpriteConfig.NORMAL_HOME_BRICK_SIZE / 2));
         this.addChild(spHome);
+
         //添加杆子
         offsetControlBar = SpriteUtils.getSprite("marbles_baffle.png", SpriteConfig.CONTROL_BAR_W, SpriteConfig.NORMAL_CONTROL_BAR_H, false, SpriteConfig.TAG_OFFSET_NORMAL_CONTROL_BAR);
         CGPoint ccp = CGPoint.ccp(screenWith / 2,
@@ -325,17 +355,32 @@ public class GameProjectionLayer extends BaseCCLayer{
     };
 
     private void tick(float d) {
+
+        if(oBitmap != null){
+            CCSprite spHome = SpriteUtils.getSprite(oBitmap, SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE, false, E_GameType.OPPOSITE_MASTER.getCode());
+            spHome.setPosition(CGPoint.ccp(screenWith / 2, screenHeight - SpriteConfig.NORMAL_HOME_BRICK_SIZE / 2));
+            GameProjectionLayer.this.addChild(spHome);
+            oBitmap = null;
+        }
+
+        if(mBitmap != null){
+            CCSprite spHome = SpriteUtils.getSprite(mBitmap, SpriteConfig.NORMAL_HOME_BRICK_SIZE, SpriteConfig.NORMAL_HOME_BRICK_SIZE, false, E_GameType.MY_MASTER.getCode());
+            spHome.setPosition(CGPoint.ccp(screenWith / 2, SpriteConfig.NORMAL_HOME_BRICK_SIZE / 2));
+            GameProjectionLayer.this.addChild(spHome);
+            mBitmap = null;
+        }
+
         if(result != null){
             if(result.isWin()){
-                endLable = CCLabel.makeLabel("YOU WIN", CGSize.make(400, 400), CCLabel.TextAlignment.CENTER, "", 80);
-                endLable.setPosition(CGPoint.ccp(screenWith / 2, screenHeight / 2));
-                endLable.setColor(new ccColor3B(255, 255, 255));
-                this.addChild(endLable);
+                spEnd = SpriteUtils.getSprite("marbles_text_victory.png", screenWith, 300, false, -1);
+                spEnd.setPosition(CGPoint.ccp(screenWith / 2, screenHeight / 2));
+                spEnd.setColor(new ccColor3B(255, 255, 255));
+                this.addChild(spEnd);
             }else {
-                endLable = CCLabel.makeLabel("YOU LOSE",  CGSize.make(400, 400), CCLabel.TextAlignment.CENTER, "", 80);
-                endLable.setPosition(CGPoint.ccp(screenWith / 2, screenHeight / 2));
-                endLable.setColor(new ccColor3B(255, 255, 255));
-                this.addChild(endLable);
+                spEnd = SpriteUtils.getSprite("marbles_text_failure.png", screenWith, 300, false, -1);
+                spEnd.setPosition(CGPoint.ccp(screenWith / 2, screenHeight / 2));
+                spEnd.setColor(new ccColor3B(255, 255, 255));
+                this.addChild(spEnd);
             }
         }
 
@@ -545,7 +590,7 @@ public class GameProjectionLayer extends BaseCCLayer{
             MsgData msgData = new MsgData();
             msgData.setCode(RequestCode.BATTLE_DATA_STICK);
             msgData.setData(new ControlBarInfo(p2.x/screenWith));
-            MySocket.getInstance().setUdpMessage(msgData);
+            MySocket.getInstance().setUdpMessageToClient(msgData);
         }
         return super.ccTouchesBegan(event);
     }
@@ -571,7 +616,7 @@ public class GameProjectionLayer extends BaseCCLayer{
             MsgData msgData = new MsgData();
             msgData.setCode(RequestCode.BATTLE_DATA_STICK);
             msgData.setData(new ControlBarInfo(p2.x/screenWith));
-            MySocket.getInstance().setUdpMessage(msgData);
+            MySocket.getInstance().setUdpMessageToClient(msgData);
         }
         return super.ccTouchesMoved(event);
     }
@@ -581,13 +626,13 @@ public class GameProjectionLayer extends BaseCCLayer{
      */
     @Override
     public boolean ccTouchesEnded(MotionEvent event) {
-        if(endLable != null){
+        if(spEnd != null){
             float x = event.getX();
             float y = event.getY();
             CGPoint p1 = CGPoint.ccp(x, y);
             // 将以左上角为原点的坐标转换为以左下角为原点的坐标
             CGPoint p2 = CCDirector.sharedDirector().convertToGL(p1);
-            CGRect rect = SpriteUtils.getSpriteRect(endLable, 400, 400);
+            CGRect rect = SpriteUtils.getSpriteRect(spEnd, 400, 400);
             if(rect.contains(p2.x, p2.y)){
                 goToNext();
             }

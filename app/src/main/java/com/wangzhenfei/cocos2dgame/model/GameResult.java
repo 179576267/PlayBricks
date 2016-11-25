@@ -10,13 +10,11 @@ public class GameResult {
 
     public GameResult(int winnerId) {
         this.winnerId = winnerId;
-        if(UserInfo.info != null){
-            if(UserInfo.info.getId() == winnerId){
+            if(SaveUserInfo.getInstance().getId() == winnerId){
                 win = true;
             }else {
                 win = false;
             }
-        }
     }
 
     public int getWinnerId() {

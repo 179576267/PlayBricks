@@ -1,21 +1,37 @@
 package com.wangzhenfei.cocos2dgame.socket;
 
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Message;
 import android.util.Log;
 
+import com.wangzhenfei.cocos2dgame.config.RequestCode;
+import com.wangzhenfei.cocos2dgame.model.BattleBall;
+import com.wangzhenfei.cocos2dgame.model.BattleBrick;
+import com.wangzhenfei.cocos2dgame.model.BattleInitInfo;
+import com.wangzhenfei.cocos2dgame.model.ControlBarInfo;
+import com.wangzhenfei.cocos2dgame.model.SaveUserInfo;
 import com.wangzhenfei.cocos2dgame.socket.netty.NettyClientHandler;
 import com.wangzhenfei.cocos2dgame.socket.netty.NettyUDPServer;
-import com.wangzhenfei.cocos2dgame.tool.ByteUtils;
 import com.wangzhenfei.cocos2dgame.tool.JsonUtils;
 import com.wangzhenfei.cocos2dgame.tool.Utils;
+
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+import de.greenrobot.event.EventBus;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -28,24 +44,73 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
+import io.netty.util.CharsetUtil;
 
 /**
  * Created by wangzhenfei on 2016/11/11.
  */
 public class MySocket {
+    private final  int MSG_SEND_SERVER  = 0X546;
+    private final  int MSG_SEND_CLIENT  = 0X556;
     private  final String TAG = getClass().getSimpleName();
-
+    public static ExecutorService pool = Executors.newCachedThreadPool();
     private static MySocket mInstance;
     public static String  ip = "";
     public static int port ;
     private SocketChannel socketChannel;
     private  DatagramSocket client;
-    private MySocket(){
-        try {
-            client = new DatagramSocket();
-        } catch (SocketException e) {
-            e.printStackTrace();
+    HandlerThread callHandlerThread = new HandlerThread("callHandlerThread");
+    { callHandlerThread.start(); }
+    protected Handler handler = new Handler(callHandlerThread.getLooper()) {
+        @Override
+        public void handleMessage(Message msg) {
+            if(msg.what == MSG_SEND_SERVER){
+                SocketAddress target = new InetSocketAddress(RequestCode.UDP_IP, RequestCode.UDP_PORT);
+                if(client == null){
+                    try {
+                        client = new DatagramSocket();
+                    } catch (SocketException e) {
+                        e.printStackTrace();
+                    }
+                }
+                try {
+                    client = new DatagramSocket();
+                    byte[] sendbuf = msg.obj.toString().getBytes();
+                    DatagramPacket pack = new DatagramPacket(sendbuf, sendbuf.length,target);
+                    client.send(pack);
+//                    receive();
+                } catch (SocketException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }else {
+                if(client == null){
+                    try {
+                        client = new DatagramSocket();
+                    } catch (SocketException e) {
+                        e.printStackTrace();
+                    }
+                }
+                try {
+                    InetAddress address = InetAddress.getByName(ip);
+                    String str = JsonUtils.toJson(msg.obj);
+                    byte[] data = str.getBytes("UTF-8");
+                    DatagramPacket sendPacket = new DatagramPacket(data, data.length, address,port);
+                    client.send(sendPacket);
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                } catch (UnknownHostException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
+    };
+
+
+    private MySocket(){
     }
 
     public void initSocket() {
@@ -147,57 +212,101 @@ public class MySocket {
     }
 
 
-    private int times;
-    public void setUdpMessage(Object s){
-        times ++;
-        Log.i("MySocket", times + "");
-        if(client == null){
-            try {
-                client = new DatagramSocket();
-            } catch (SocketException e) {
-                e.printStackTrace();
-            }
-        }
-        try {
-            client.setSoTimeout(3000);
-            InetAddress address = InetAddress.getByName(ip);
-            String str = JsonUtils.toJson(s);
-            byte[] data = str.getBytes("UTF-8");
-            DatagramPacket sendPacket = new DatagramPacket(data, data.length, address,8888);
-            client.send(sendPacket);
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public void setUdpMessageToClient(Object s){
+        Message message = new Message();
+        message.what = MSG_SEND_CLIENT;
+        message.obj = s;
+        handler.sendMessage(message);
     }
 
 
-    public void setUdpMessageToServet(int id){
-        if(client == null){
-            try {
-                client = new DatagramSocket();
-            } catch (SocketException e) {
-                e.printStackTrace();
-            }
-        }
-        try {
-            client.setSoTimeout(3000);
-            InetAddress address = InetAddress.getByName(RequestCode.UDP_IP);
-//            byte [] data = ByteUtils.intToBytes(id);
-            byte[] data = (id + "").getBytes();
-            DatagramPacket sendPacket = new DatagramPacket(data, data.length, address,RequestCode.UDP_PORT);
-            client.send(sendPacket);
+    public void setUdpMessageToServer(int id){
+        Message message = new Message();
+        message.what = MSG_SEND_SERVER;
+        message.obj = id;
+        handler.sendMessage(message);
 
-        }  catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
+//        if(client == null){
+//            try {
+//                client = new DatagramSocket();
+//            } catch (SocketException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//        try {
+//            client.setSoTimeout(3000);
+//            InetAddress address = InetAddress.getByName(RequestCode.UDP_IP);
+////            byte [] data = ByteUtils.intToBytes(id);
+//            byte[] data = (id + "").getBytes();
+//            DatagramPacket sendPacket = new DatagramPacket(data, data.length, address,RequestCode.UDP_PORT);
+//            client.send(sendPacket);
+//
+//        }  catch (UnsupportedEncodingException e) {
+//            e.printStackTrace();
+//        } catch (UnknownHostException e) {
+//            e.printStackTrace();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+    }
+
+
+
+    /**
+     * 接收请求
+     */
+    public  void receive() {
+        pool.execute(new Runnable(){
+            @Override
+            public void run() {
+                try {
+                    for (;;) {
+
+                        byte[] buf = new byte[1024];
+                        DatagramPacket packet = new DatagramPacket(buf, buf.length);
+                        client.receive(packet);
+                        String rec = new String(packet.getData(), 0, packet.getLength()).trim();
+
+                        System.out.println("接收到数据长度:"+rec.length() + "  来自:"+packet.getAddress());
+                        System.out.println("接收到数据：" + rec);
+                        Log.i("MySocket", "返回信息:\n" + JsonUtils.format(rec));
+                        JSONObject json = new JSONObject(rec);
+                        int code = -1 ;
+                        String data = null;
+                        if(json.has("code")){
+                            code = json.getInt("code");
+                            data = json.getString("data");
+                        }
+                        switch (code){
+                            case RequestCode.BATTLE_START:
+                                BattleInitInfo info = JsonUtils.fromJSON(BattleInitInfo.class, data);
+                                EventBus.getDefault().postSticky(info);
+                                break;
+                            case RequestCode.BATTLE_DATA_BALL:
+                        //                Log.i("cishutest","receiverTimes:" + (receiverTimes ++));
+                                List<BattleBall> infos = JsonUtils.getListFromJSON(BattleBall.class, data);
+                                EventBus.getDefault().postSticky(infos);
+                                break;
+                            case RequestCode.BATTLE_DATA_STICK:
+                                ControlBarInfo barInfo = JsonUtils.fromJSON(ControlBarInfo.class, data);
+                                EventBus.getDefault().postSticky(barInfo);
+                                break;
+                            case RequestCode.BATTLE_DATA_BUMP:
+                                BattleBrick brick = JsonUtils.fromJSON(BattleBrick.class, data);
+                                EventBus.getDefault().postSticky(brick);
+                                break;
+                            default:
+                                Log.i("MySocket","返回错误:" + rec);
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            }
+        });
+
     }
 
     //*********************************api*************************************************

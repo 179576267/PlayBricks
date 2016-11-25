@@ -1,4 +1,4 @@
-package com.wangzhenfei.cocos2dgame;
+package com.wangzhenfei.cocos2dgame.config;
 
 /**
  * Created by wangzhenfei on 2016/11/10.

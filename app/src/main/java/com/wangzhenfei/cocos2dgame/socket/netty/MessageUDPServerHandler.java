@@ -7,9 +7,8 @@ import com.wangzhenfei.cocos2dgame.model.BattleBrick;
 import com.wangzhenfei.cocos2dgame.model.BattleInitInfo;
 import com.wangzhenfei.cocos2dgame.model.ControlBarInfo;
 import com.wangzhenfei.cocos2dgame.model.UserInfo;
-import com.wangzhenfei.cocos2dgame.socket.RequestCode;
+import com.wangzhenfei.cocos2dgame.config.RequestCode;
 import com.wangzhenfei.cocos2dgame.tool.JsonUtils;
-import com.wangzhenfei.cocos2dgame.tool.Utils;
 
 import org.json.JSONObject;
 
@@ -99,9 +98,6 @@ public class MessageUDPServerHandler extends SimpleChannelInboundHandler<Datagra
             data = json.getString("data");
         }
         switch (code){
-            case RequestCode.LOGIN:
-                UserInfo.info = JsonUtils.fromJSON(UserInfo.class, data);
-                break;
             case RequestCode.BATTLE_START:
                 BattleInitInfo info = JsonUtils.fromJSON(BattleInitInfo.class, data);
                 EventBus.getDefault().postSticky(info);

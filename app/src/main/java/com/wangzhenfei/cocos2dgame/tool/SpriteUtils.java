@@ -1,10 +1,13 @@
 package com.wangzhenfei.cocos2dgame.tool;
 
+import android.graphics.Bitmap;
 import android.util.Log;
 
-import com.wangzhenfei.cocos2dgame.SpriteConfig;
+import com.wangzhenfei.cocos2dgame.config.SpriteConfig;
 
 import org.cocos2d.nodes.CCSprite;
+import org.cocos2d.nodes.CCTextureCache;
+import org.cocos2d.opengl.CCTexture2D;
 import org.cocos2d.types.CGPoint;
 import org.cocos2d.types.CGRect;
 
@@ -14,6 +17,20 @@ import org.cocos2d.types.CGRect;
 public class SpriteUtils {
     public static CCSprite getSprite(String name,float w, float h, boolean resetAnchor, int tag){
         CCSprite sprite = CCSprite.sprite(name);
+        sprite.setTag(tag);
+        if(resetAnchor){
+            sprite.setAnchorPoint(CGPoint.getZero());
+        }
+        float srcW = sprite.getContentSize().getWidth();
+        float srcH = sprite.getContentSize().getHeight();
+//        sprite.setContentSize(CGSize.make(w, h));
+        sprite.setScaleX(w / srcW);
+        sprite.setScaleY(h / srcH);
+        return sprite;
+    }
+
+    public static CCSprite getSprite(Bitmap bitmap,float w, float h, boolean resetAnchor, int tag){
+        CCSprite sprite = CCSprite.sprite(bitmap, tag + "");
         sprite.setTag(tag);
         if(resetAnchor){
             sprite.setAnchorPoint(CGPoint.getZero());

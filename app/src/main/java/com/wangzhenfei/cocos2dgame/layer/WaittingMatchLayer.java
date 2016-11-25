@@ -1,13 +1,11 @@
 package com.wangzhenfei.cocos2dgame.layer;
 
-import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.Looper;
-import android.os.Message;
 
 import com.wangzhenfei.cocos2dgame.model.BattleInitInfo;
+import com.wangzhenfei.cocos2dgame.model.SaveUserInfo;
 import com.wangzhenfei.cocos2dgame.model.UserInfo;
-import com.wangzhenfei.cocos2dgame.socket.RequestCode;
+import com.wangzhenfei.cocos2dgame.config.RequestCode;
 import com.wangzhenfei.cocos2dgame.socket.MsgData;
 import com.wangzhenfei.cocos2dgame.socket.MySocket;
 import com.wangzhenfei.cocos2dgame.tool.SpriteUtils;
@@ -49,7 +47,7 @@ public class WaittingMatchLayer extends BaseCCLayer{
         long id = Thread.currentThread().getId();
         CCScene scene = CCScene.node();
         BaseCCLayer layer = null;
-        if(info.getInitiativeUser().getId() == UserInfo.info.getId()){ // 自己主动
+        if(info.getInitiativeUser().getId() == SaveUserInfo.getInstance().getId()){ // 自己主动
             layer = new GameLayer(info);
         }else {
             layer = new GameProjectionLayer(info);

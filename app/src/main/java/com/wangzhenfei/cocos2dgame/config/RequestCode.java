@@ -1,4 +1,4 @@
-package com.wangzhenfei.cocos2dgame.socket;
+package com.wangzhenfei.cocos2dgame.config;
 
 /**
  * Created by wangzhenfei on 2016/11/11.
@@ -12,7 +12,11 @@ public class RequestCode {
 //    public final static int PORT = 9999;
 
     public final static String UDP_IP = "192.168.2.121";
+//    public final static String UDP_IP = "182.254.247.160";
     public final static int UDP_PORT = 2818;
+
+    public final static String BASE_URL = "";
+    public  static String UP_LOAD_PATH = "";
 
     /**
      * 登录
@@ -25,9 +29,19 @@ public class RequestCode {
     public final static int LOGOUT = 1002;
 
     /**
-     * 登出
+     * udp停止
      */
     public final static int STOP = 1003;
+
+    /**
+     * 注册
+     */
+    public final static int REGISTER = 1009;
+
+    /**
+     * 获取上传路径
+     */
+    public final static int GET_UPLOAD_PATH = 1010;
 
     /**
      * 开始对战
@@ -58,5 +72,11 @@ public class RequestCode {
      * 战斗数据(道具时间到期)
      */
     public final static int BATTLE_DATA_PROP_END = 3005;
+
+    /**
+     * 失败
+     */
+    public final static int FAILURE = 9999;
+
 
 }

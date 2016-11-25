@@ -1,9 +1,18 @@
 package com.wangzhenfei.cocos2dgame.layer;
 
+import android.graphics.Bitmap;
 import android.graphics.Rect;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.widget.Toast;
 
+import com.wangzhenfei.cocos2dgame.GameApplication;
+import com.wangzhenfei.cocos2dgame.config.SpriteConfig;
+import com.wangzhenfei.cocos2dgame.model.E_GameType;
+import com.wangzhenfei.cocos2dgame.model.SaveUserInfo;
 import com.wangzhenfei.cocos2dgame.tool.SpriteUtils;
 
 import org.cocos2d.actions.instant.CCHide;
@@ -18,6 +27,8 @@ import org.cocos2d.types.CGRect;
  * Created by wangzhenfei on 2016/11/9.
  */
 public class StartPageLayer extends BaseCCLayer{
+
+
     public StartPageLayer() {
         super();
         this.setIsTouchEnabled(true);
@@ -86,7 +97,12 @@ public class StartPageLayer extends BaseCCLayer{
         CGPoint p2 = CCDirector.sharedDirector().convertToGL(p1);
         CGRect rect = SpriteUtils.getSpriteRect(startButtonUp, 334, 334);
         if(rect.contains(p2.x, p2.y)){
-            goToNext();
+            if(SaveUserInfo.getInstance().getId() != 0){
+                goToNext();
+            }else {
+                Toast.makeText(GameApplication.getAppInstance(), "您还未登录", Toast.LENGTH_LONG).show();
+            }
+
         }
         return super.ccTouchesEnded(event);
     }
