@@ -6,36 +6,36 @@ package com.wangzhenfei.cocos2dgame.model;
  */
 public class BattleBall {
 
-    private int id;
+    private int ballId;
 
-    private Location location;
+    private Location position;
 
     public BattleBall(int id, Location location) {
-        this.id = id;
-        this.location = location;
+        this.ballId = id;
+        this.position = location;
     }
 
     public int getId() {
-        return id;
+        return ballId;
     }
 
     public void setId(int id) {
-        this.id = id;
+        this.ballId = id;
     }
 
     public Location getLocation() {
-        return location;
+        return position;
     }
 
     public void setLocation(Location location) {
-        this.location = location;
+        this.position = location;
     }
 
     @Override
     public String toString() {
         return "BattleBall{" +
-                "id=" + id +
-                ", location=" + location +
+                "id=" + ballId +
+                ", location=" + position +
                 '}';
     }
 }

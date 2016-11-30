@@ -22,4 +22,5 @@ public abstract class BaseCCLayer extends CCLayer{
     public void goToNext(){
         this.cleanup();
     }
+
 }

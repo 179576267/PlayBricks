@@ -1,15 +1,15 @@
 package com.wangzhenfei.cocos2dgame.layer;
 
 import android.graphics.Bitmap;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Message;
+import android.graphics.Rect;
 import android.util.Log;
 import android.view.MotionEvent;
 
 import com.wangzhenfei.cocos2dgame.config.SpriteConfig;
-import com.wangzhenfei.cocos2dgame.model.BattleBall;
+import com.wangzhenfei.cocos2dgame.model.ActivityLifeCycle;
+import com.wangzhenfei.cocos2dgame.model.BallAndBarPosition;
 import com.wangzhenfei.cocos2dgame.model.BattleBrick;
+import com.wangzhenfei.cocos2dgame.model.BattleEndRequest;
 import com.wangzhenfei.cocos2dgame.model.BattleInitInfo;
 import com.wangzhenfei.cocos2dgame.model.ControlBarInfo;
 import com.wangzhenfei.cocos2dgame.model.E_GameType;
@@ -65,15 +65,13 @@ public class GameProjectionLayer extends BaseCCLayer{
         EventBus.getDefault().register(this);
         SpriteConfig.CONTROL_BAR_W = SpriteConfig.NORMAL_CONTROL_BAR_W;
         this.setIsTouchEnabled(true);
-        if(SaveUserInfo.getInstance().getId() == info.getInitiativeUser().getId()){
-            myBatter = info.getInitiativeUser();
-            offsetBatter = info.getPassivityUser();
+        if(SaveUserInfo.getInstance().getId() == info.getInitiativePlayer().getId()){
+            myBatter = info.getInitiativePlayer();
+            offsetBatter = info.getPassivityPlayer();
         }else {
-            myBatter = info.getPassivityUser();
-            offsetBatter = info.getInitiativeUser();
+            myBatter = info.getPassivityPlayer();
+            offsetBatter = info.getInitiativePlayer();
         }
-        MySocket.getInstance().ip = offsetBatter.getIp();
-        MySocket.getInstance().port = offsetBatter.getUdpPort();
 
         addSprite();
         balls.add(SpriteConfig.TAG_ADD_BALL1);
@@ -129,19 +127,22 @@ public class GameProjectionLayer extends BaseCCLayer{
      * 球的位置回调
      * @param infos
      */
-    public void onEvent( List<BattleBall> infos) {
+    public void onEvent( BallAndBarPosition infos) {
         if(infos != null){
-           if(infos.size() == 1){
+           if(infos.getData().size() == 1){
                hideMoreBall();
            }
-            for(int i=0; i < Math.min(infos.size(), balls.size()); i++){
-                CCSprite ball = (CCSprite) getChildByTag(infos.get(i).getId());
+            for(int i=0; i < Math.min(infos.getData().size(), balls.size()); i++){
+                CCSprite ball = (CCSprite) getChildByTag(infos.getData().get(i).getId());
                 if(ball != null){
-                    CGPoint point = CGPoint.ccp((1 - infos.get(i).getLocation().getX()) * screenWith,
-                            (1 - infos.get(i).getLocation().getY()) * screenHeight);
+                    CGPoint point = CGPoint.ccp((1 - infos.getData().get(i).getLocation().getX()) * screenWith,
+                            (1 - infos.getData().get(i).getLocation().getY()) * screenHeight);
                     ball.setPosition(point);
                 }
             }
+            CGPoint position = offsetControlBar.getPosition();
+            position.x = (1 - infos.getPoleX()) * screenWith;
+            offsetControlBar.setPosition(position);
         }
 
     }
@@ -154,19 +155,6 @@ public class GameProjectionLayer extends BaseCCLayer{
         this.result = result;
     }
 
-
-    /**
-     * 对方横杆位置回调
-     * @param infos
-     */
-    public void onEvent( ControlBarInfo infos) {
-        if(infos != null){
-            CGPoint position = offsetControlBar.getPosition();
-            position.x = (1 - infos.getDx()) * screenWith;
-            offsetControlBar.setPosition(position);
-        }
-    }
-
     /**
      * 碰撞的回调
      * @param infos
@@ -176,7 +164,19 @@ public class GameProjectionLayer extends BaseCCLayer{
         battleBrick = infos;
     }
 
+    public void onEvent(ActivityLifeCycle cycle){
+        if(!cycle.isShow()){ // 应用退到后台
+            spEnd = SpriteUtils.getSprite("marbles_text_failure.png",screenWith, 300, false, -1);
+            spEnd.setPosition(CGPoint.ccp(screenWith / 2, screenHeight / 2));
+            spEnd.setColor(new ccColor3B(255, 255, 255));
+            this.addChild(spEnd);
 
+            MsgData msgData = new MsgData();
+            msgData.setCode(RequestCode.BATTLE_END);
+            msgData.setData(new BattleEndRequest(offsetBatter.getId()));
+            MySocket.getInstance().setMessage(msgData);
+        }
+    }
     /**
      * 道具状态的回调
      */
@@ -278,7 +278,7 @@ public class GameProjectionLayer extends BaseCCLayer{
 
         //添加杆子
         myControlBar = SpriteUtils.getSprite("marbles_baffle.png", SpriteConfig.CONTROL_BAR_W, SpriteConfig.NORMAL_CONTROL_BAR_H, false, SpriteConfig.TAG_MY_NORMAL_CONTROL_BAR);
-        CGPoint ccp = CGPoint.ccp(screenWith / 2, SpriteConfig.NORMAL_CONTROL_BAR_H / 2 + SpriteConfig.NORMAL_BRICK_SIZE * 3 + 10);
+        CGPoint ccp = CGPoint.ccp(screenWith / 2, SpriteConfig.NORMAL_CONTROL_BAR_H / 2 + SpriteConfig.NORMAL_BRICK_SIZE * 3 + SpriteConfig.CONTROL_TO_BRICK);
         myControlBar.setPosition(ccp);
         this.addChild(myControlBar);
     }
@@ -325,7 +325,7 @@ public class GameProjectionLayer extends BaseCCLayer{
         //添加杆子
         offsetControlBar = SpriteUtils.getSprite("marbles_baffle.png", SpriteConfig.CONTROL_BAR_W, SpriteConfig.NORMAL_CONTROL_BAR_H, false, SpriteConfig.TAG_OFFSET_NORMAL_CONTROL_BAR);
         CGPoint ccp = CGPoint.ccp(screenWith / 2,
-                screenHeight - (SpriteConfig.NORMAL_CONTROL_BAR_H / 2 + SpriteConfig.NORMAL_BRICK_SIZE * 3 + 10));
+                screenHeight - (SpriteConfig.NORMAL_CONTROL_BAR_H / 2 + SpriteConfig.NORMAL_BRICK_SIZE * 3 + SpriteConfig.CONTROL_TO_BRICK));
         offsetControlBar.setPosition(ccp);
         this.addChild(offsetControlBar);
     }
@@ -526,7 +526,7 @@ public class GameProjectionLayer extends BaseCCLayer{
             unschedule("expendLager");
 
             MsgData msgData = new MsgData();
-            msgData.setCode(RequestCode.BATTLE_DATA_GET_PROP);
+            msgData.setCode(RequestCode.BATTLE_DATA_PROP_END);
             msgData.setData(new PropStatusInfo(E_GameType.ADD_WIDTH.getCode(), false));
             MySocket.getInstance().setMessage(msgData);
         }
@@ -544,7 +544,7 @@ public class GameProjectionLayer extends BaseCCLayer{
             unschedule("moreBall");
             hideMoreBall();
             MsgData msgData = new MsgData();
-            msgData.setCode(RequestCode.BATTLE_DATA_GET_PROP);
+            msgData.setCode(RequestCode.BATTLE_DATA_PROP_END);
             msgData.setData(new PropStatusInfo(E_GameType.TRHEE_HOODLE.getCode(), false));
             MySocket.getInstance().setMessage(msgData);
         }
@@ -558,7 +558,7 @@ public class GameProjectionLayer extends BaseCCLayer{
             unschedule("acclerate");
 
             MsgData msgData = new MsgData();
-            msgData.setCode(RequestCode.BATTLE_DATA_GET_PROP);
+            msgData.setCode(RequestCode.BATTLE_DATA_PROP_END);
             msgData.setData(new PropStatusInfo(E_GameType.ADD_SPEED.getCode(), false));
             MySocket.getInstance().setMessage(msgData);
         }
@@ -586,11 +586,12 @@ public class GameProjectionLayer extends BaseCCLayer{
             }else if(p2.x > screenWith - (SpriteConfig.CONTROL_BAR_W / 2)){
                 p2.x = screenWith - (SpriteConfig.CONTROL_BAR_W / 2);
             }
-            myControlBar.setPosition(CGPoint.ccp(p2.x, SpriteConfig.NORMAL_CONTROL_BAR_H / 2 + SpriteConfig.NORMAL_BRICK_SIZE * 3 + 10));
-            MsgData msgData = new MsgData();
-            msgData.setCode(RequestCode.BATTLE_DATA_STICK);
-            msgData.setData(new ControlBarInfo(p2.x/screenWith));
-            MySocket.getInstance().setUdpMessageToClient(msgData);
+            myControlBar.setPosition(CGPoint.ccp(p2.x, SpriteConfig.NORMAL_CONTROL_BAR_H / 2 + SpriteConfig.NORMAL_BRICK_SIZE * 3 + SpriteConfig.CONTROL_TO_BRICK));
+//            MsgData msgData = new MsgData();
+//            msgData.setCode(RequestCode.BATTLE_DATA_STICK);
+//            msgData.setData(new ControlBarInfo(p2.x/screenWith));
+//            MySocket.getInstance().setUdpMessageToClient(msgData);
+            sendControlBarLocation();
         }
         return super.ccTouchesBegan(event);
     }
@@ -612,11 +613,12 @@ public class GameProjectionLayer extends BaseCCLayer{
             }else if(p2.x > screenWith - (SpriteConfig.CONTROL_BAR_W / 2)){
                 p2.x = screenWith - (SpriteConfig.CONTROL_BAR_W / 2);
             }
-            myControlBar.setPosition(CGPoint.ccp(p2.x, SpriteConfig.NORMAL_CONTROL_BAR_H / 2 + SpriteConfig.NORMAL_BRICK_SIZE * 3 + 10));
-            MsgData msgData = new MsgData();
-            msgData.setCode(RequestCode.BATTLE_DATA_STICK);
-            msgData.setData(new ControlBarInfo(p2.x/screenWith));
-            MySocket.getInstance().setUdpMessageToClient(msgData);
+            myControlBar.setPosition(CGPoint.ccp(p2.x, SpriteConfig.NORMAL_CONTROL_BAR_H / 2 + SpriteConfig.NORMAL_BRICK_SIZE * 3 + SpriteConfig.CONTROL_TO_BRICK));
+//            MsgData msgData = new MsgData();
+//            msgData.setCode(RequestCode.BATTLE_DATA_STICK);
+//            msgData.setData(new ControlBarInfo(p2.x/screenWith));
+//            MySocket.getInstance().setUdpMessageToClient(msgData);
+            sendControlBarLocation();
         }
         return super.ccTouchesMoved(event);
     }
@@ -632,8 +634,8 @@ public class GameProjectionLayer extends BaseCCLayer{
             CGPoint p1 = CGPoint.ccp(x, y);
             // 将以左上角为原点的坐标转换为以左下角为原点的坐标
             CGPoint p2 = CCDirector.sharedDirector().convertToGL(p1);
-            CGRect rect = SpriteUtils.getSpriteRect(spEnd, 400, 400);
-            if(rect.contains(p2.x, p2.y)){
+            Rect rect = SpriteUtils.getSpriteRect(spEnd, 400, 400);
+            if(rect.contains((int)p2.x, (int)p2.y)){
                 goToNext();
             }
         }
@@ -645,5 +647,18 @@ public class GameProjectionLayer extends BaseCCLayer{
         return super.ccTouchesCancelled(event);
     }
 
+
+
+    /**
+     * 发送杆子的位置
+     */
+    private void sendControlBarLocation() {
+        MsgData msgData = new MsgData();
+        msgData.setCode(RequestCode.BATTLE_DATA_BALL);
+        BallAndBarPosition position = new BallAndBarPosition();
+        position.setPoleX(myControlBar.getPosition().x / screenWith);
+        msgData.setData(position);
+        MySocket.getInstance().setUdpMessageToClient(msgData);
+    }
     //***********************************触摸事件********************************************************
 }

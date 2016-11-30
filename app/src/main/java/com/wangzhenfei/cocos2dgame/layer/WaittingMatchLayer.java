@@ -1,10 +1,7 @@
 package com.wangzhenfei.cocos2dgame.layer;
 
-import android.os.Looper;
-
 import com.wangzhenfei.cocos2dgame.model.BattleInitInfo;
 import com.wangzhenfei.cocos2dgame.model.SaveUserInfo;
-import com.wangzhenfei.cocos2dgame.model.UserInfo;
 import com.wangzhenfei.cocos2dgame.config.RequestCode;
 import com.wangzhenfei.cocos2dgame.socket.MsgData;
 import com.wangzhenfei.cocos2dgame.socket.MySocket;
@@ -47,7 +44,7 @@ public class WaittingMatchLayer extends BaseCCLayer{
         long id = Thread.currentThread().getId();
         CCScene scene = CCScene.node();
         BaseCCLayer layer = null;
-        if(info.getInitiativeUser().getId() == SaveUserInfo.getInstance().getId()){ // 自己主动
+        if(info.getInitiativePlayer().getId() == SaveUserInfo.getInstance().getId()){ // 自己主动
             layer = new GameLayer(info);
         }else {
             layer = new GameProjectionLayer(info);
@@ -149,11 +146,12 @@ public class WaittingMatchLayer extends BaseCCLayer{
                 EventBus.getDefault().unregister(this);
             }
             if(timeCount == 30){
-                CCScene scene = CCScene.node();
-                scene.addChild(new StartPageLayer());
-                // Make the Scene active
-                CCDirector.sharedDirector().runWithScene(scene);
-                EventBus.getDefault().unregister(this);
+                timeCount = 0;
+//                CCScene scene = CCScene.node();
+//                scene.addChild(new StartPageLayer());
+//                // Make the Scene active
+//                CCDirector.sharedDirector().runWithScene(scene);
+//                EventBus.getDefault().unregister(this);
             }
             timeCount++;
         }

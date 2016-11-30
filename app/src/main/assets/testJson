@@ -1,5 +1,5 @@
 {
- 		"initiativeUser" : {
+ 		"initiativePlayer" : {
  			"id" : 1005,
  			"name" : "hoodle_1005",
  			"avatar" : "hoodle_1005",
@@ -66,7 +66,7 @@
  				}
  			]
  		},
- 		"passivityUser" : {
+ 		"passivityPlayer" : {
  			"id" : 1002,
  			"name" : "hoodle_1002",
  			"avatar" : "hoodle_1002",

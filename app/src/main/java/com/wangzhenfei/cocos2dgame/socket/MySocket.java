@@ -6,11 +6,13 @@ import android.os.Message;
 import android.util.Log;
 
 import com.wangzhenfei.cocos2dgame.config.RequestCode;
+import com.wangzhenfei.cocos2dgame.model.BallAndBarPosition;
 import com.wangzhenfei.cocos2dgame.model.BattleBall;
 import com.wangzhenfei.cocos2dgame.model.BattleBrick;
 import com.wangzhenfei.cocos2dgame.model.BattleInitInfo;
 import com.wangzhenfei.cocos2dgame.model.ControlBarInfo;
 import com.wangzhenfei.cocos2dgame.model.SaveUserInfo;
+import com.wangzhenfei.cocos2dgame.model.UDPPlayerInfoResponse;
 import com.wangzhenfei.cocos2dgame.socket.netty.NettyClientHandler;
 import com.wangzhenfei.cocos2dgame.socket.netty.NettyUDPServer;
 import com.wangzhenfei.cocos2dgame.tool.JsonUtils;
@@ -50,62 +52,51 @@ import io.netty.util.CharsetUtil;
  * Created by wangzhenfei on 2016/11/11.
  */
 public class MySocket {
-    private final  int MSG_SEND_SERVER  = 0X546;
-    private final  int MSG_SEND_CLIENT  = 0X556;
     private  final String TAG = getClass().getSimpleName();
     public static ExecutorService pool = Executors.newCachedThreadPool();
     private static MySocket mInstance;
-    public static String  ip = "";
-    public static int port ;
+    public static String  ip = RequestCode.UDP_IP;
+    public static int port = RequestCode.UDP_PORT;
     private SocketChannel socketChannel;
     private  DatagramSocket client;
+    static {
+        ip = RequestCode.UDP_IP;
+        port = RequestCode.UDP_PORT;
+    }
+    private String oldip = "";
     HandlerThread callHandlerThread = new HandlerThread("callHandlerThread");
     { callHandlerThread.start(); }
     protected Handler handler = new Handler(callHandlerThread.getLooper()) {
         @Override
         public void handleMessage(Message msg) {
-            if(msg.what == MSG_SEND_SERVER){
-                SocketAddress target = new InetSocketAddress(RequestCode.UDP_IP, RequestCode.UDP_PORT);
+            if(!oldip.equals(ip)){ // ip切换需要重新创建reciver
+                hasReciver = false;
+                oldip = ip;
+            }
+                SocketAddress target = new InetSocketAddress(ip, port);
                 if(client == null){
                     try {
                         client = new DatagramSocket();
+//                        receive();
                     } catch (SocketException e) {
                         e.printStackTrace();
                     }
                 }
                 try {
-                    client = new DatagramSocket();
-                    byte[] sendbuf = msg.obj.toString().getBytes();
-                    DatagramPacket pack = new DatagramPacket(sendbuf, sendbuf.length,target);
+                    MsgData msgData = (MsgData) msg.obj;
+                    msgData.setInfo(SaveUserInfo.getInstance().getId() + "");
+                    String str = JsonUtils.toJson(msgData);
+                    byte[] data = str.getBytes("UTF-8");
+                    DatagramPacket pack = new DatagramPacket(data, data.length,target);
                     client.send(pack);
-//                    receive();
+                    receive();
+//                    client.send(new DatagramPacket(data, data.length,new InetSocketAddress("192.168.2.121", 28181)));
+                    Log.i(TAG, "udp发送成功：" + "ip:" + ip + "port:" + port + str);
                 } catch (SocketException e) {
                     e.printStackTrace();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-            }else {
-                if(client == null){
-                    try {
-                        client = new DatagramSocket();
-                    } catch (SocketException e) {
-                        e.printStackTrace();
-                    }
-                }
-                try {
-                    InetAddress address = InetAddress.getByName(ip);
-                    String str = JsonUtils.toJson(msg.obj);
-                    byte[] data = str.getBytes("UTF-8");
-                    DatagramPacket sendPacket = new DatagramPacket(data, data.length, address,port);
-                    client.send(sendPacket);
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                } catch (UnknownHostException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
         }
     };
 
@@ -114,16 +105,16 @@ public class MySocket {
     }
 
     public void initSocket() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    new NettyUDPServer().start();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                try {
+//                    new NettyUDPServer().start();
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        }).start();
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -213,42 +204,15 @@ public class MySocket {
 
 
     public void setUdpMessageToClient(Object s){
-        Message message = new Message();
-        message.what = MSG_SEND_CLIENT;
-        message.obj = s;
-        handler.sendMessage(message);
+        setUdpMessageToServer(s);
     }
 
 
-    public void setUdpMessageToServer(int id){
+    public void setUdpMessageToServer(Object o){
         Message message = new Message();
-        message.what = MSG_SEND_SERVER;
-        message.obj = id;
+        message.what = 0;
+        message.obj = o;
         handler.sendMessage(message);
-
-
-//        if(client == null){
-//            try {
-//                client = new DatagramSocket();
-//            } catch (SocketException e) {
-//                e.printStackTrace();
-//            }
-//        }
-//        try {
-//            client.setSoTimeout(3000);
-//            InetAddress address = InetAddress.getByName(RequestCode.UDP_IP);
-////            byte [] data = ByteUtils.intToBytes(id);
-//            byte[] data = (id + "").getBytes();
-//            DatagramPacket sendPacket = new DatagramPacket(data, data.length, address,RequestCode.UDP_PORT);
-//            client.send(sendPacket);
-//
-//        }  catch (UnsupportedEncodingException e) {
-//            e.printStackTrace();
-//        } catch (UnknownHostException e) {
-//            e.printStackTrace();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
     }
 
 
@@ -256,20 +220,21 @@ public class MySocket {
     /**
      * 接收请求
      */
+    private boolean hasReciver;
     public  void receive() {
+        if(hasReciver){
+            return;
+        }
+        hasReciver = true;
         pool.execute(new Runnable(){
             @Override
             public void run() {
                 try {
                     for (;;) {
-
                         byte[] buf = new byte[1024];
                         DatagramPacket packet = new DatagramPacket(buf, buf.length);
                         client.receive(packet);
                         String rec = new String(packet.getData(), 0, packet.getLength()).trim();
-
-                        System.out.println("接收到数据长度:"+rec.length() + "  来自:"+packet.getAddress());
-                        System.out.println("接收到数据：" + rec);
                         Log.i("MySocket", "返回信息:\n" + JsonUtils.format(rec));
                         JSONObject json = new JSONObject(rec);
                         int code = -1 ;
@@ -284,8 +249,7 @@ public class MySocket {
                                 EventBus.getDefault().postSticky(info);
                                 break;
                             case RequestCode.BATTLE_DATA_BALL:
-                        //                Log.i("cishutest","receiverTimes:" + (receiverTimes ++));
-                                List<BattleBall> infos = JsonUtils.getListFromJSON(BattleBall.class, data);
+                                BallAndBarPosition infos = JsonUtils.fromJSON(BallAndBarPosition.class, data);
                                 EventBus.getDefault().postSticky(infos);
                                 break;
                             case RequestCode.BATTLE_DATA_STICK:
@@ -297,7 +261,7 @@ public class MySocket {
                                 EventBus.getDefault().postSticky(brick);
                                 break;
                             default:
-                                Log.i("MySocket","返回错误:" + rec);
+                                Log.i(TAG,"返回错误:" + rec);
                         }
                     }
                 } catch (Exception e) {

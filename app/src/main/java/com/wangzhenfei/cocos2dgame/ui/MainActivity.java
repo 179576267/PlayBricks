@@ -11,6 +11,7 @@ import android.widget.Toast;
 
 import com.wangzhenfei.cocos2dgame.config.RequestCode;
 import com.wangzhenfei.cocos2dgame.layer.StartPageLayer;
+import com.wangzhenfei.cocos2dgame.model.ActivityLifeCycle;
 import com.wangzhenfei.cocos2dgame.model.SaveUserInfo;
 import com.wangzhenfei.cocos2dgame.model.UserInfo;
 import com.wangzhenfei.cocos2dgame.socket.MsgData;
@@ -103,6 +104,13 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
+        EventBus.getDefault().post(new ActivityLifeCycle(false));
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        EventBus.getDefault().post(new ActivityLifeCycle(true));
     }
 
     @Override

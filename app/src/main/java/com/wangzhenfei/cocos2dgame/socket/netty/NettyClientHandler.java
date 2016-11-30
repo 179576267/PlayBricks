@@ -6,7 +6,6 @@ import android.os.HandlerThread;
 import android.os.Message;
 import android.util.Log;
 
-import com.wangzhenfei.cocos2dgame.model.BattleBall;
 import com.wangzhenfei.cocos2dgame.model.BattleBrick;
 import com.wangzhenfei.cocos2dgame.model.BattleEndResponse;
 import com.wangzhenfei.cocos2dgame.model.BattleInitInfo;
@@ -14,6 +13,8 @@ import com.wangzhenfei.cocos2dgame.model.ControlBarInfo;
 import com.wangzhenfei.cocos2dgame.model.GameResult;
 import com.wangzhenfei.cocos2dgame.model.PropStatusInfo;
 import com.wangzhenfei.cocos2dgame.model.SaveUserInfo;
+import com.wangzhenfei.cocos2dgame.model.UDPPlayerInfoRequest;
+import com.wangzhenfei.cocos2dgame.model.UDPPlayerInfoResponse;
 import com.wangzhenfei.cocos2dgame.model.UserInfo;
 import com.wangzhenfei.cocos2dgame.socket.MsgData;
 import com.wangzhenfei.cocos2dgame.socket.MySocket;
@@ -34,13 +35,20 @@ import io.netty.channel.ChannelHandlerContext;
 */
 public class NettyClientHandler extends ChannelHandlerAdapter {
     private  String TAG = getClass().getSimpleName();
+    private BattleInitInfo battleInitInfo;
     HandlerThread callHandlerThread = new HandlerThread("callHandlerThread");
     { callHandlerThread.start(); }
     protected Handler handler = new Handler(callHandlerThread.getLooper()) {
         @Override
         public void handleMessage(Message msg) {
-            MySocket.getInstance().setUdpMessageToServer(SaveUserInfo.getInstance().getId());
-            sendEmptyMessageDelayed(0, 100);
+            MySocket.ip = RequestCode.UDP_IP;
+            MySocket.port = RequestCode.UDP_PORT;
+            MsgData<UDPPlayerInfoRequest> msgDataIp = new MsgData<>();
+            msgDataIp.setCode(RequestCode.UDP_REQUEST_IP);
+            msgDataIp.setInfo(SaveUserInfo.getInstance().getId() + "");
+            msgDataIp.setData(new UDPPlayerInfoRequest(SaveUserInfo.getInstance().getId(), AppDeviceInfo.getIpAddress()));
+            MySocket.getInstance().setUdpMessageToServer(msgDataIp);
+            sendEmptyMessageDelayed(0, 1000);
         }
     };
 
@@ -74,30 +82,27 @@ public class NettyClientHandler extends ChannelHandlerAdapter {
         if(json.has("info")){
             info = json.getString("info");
         }
+        MsgData<String> msgData;
         switch (code){
             case RequestCode.LOGIN:
                 UserInfo userInfo = JsonUtils.fromJSON(UserInfo.class, data);
                 SaveUserInfo.getInstance().setUserinfo(userInfo);
-//                handler.sendEmptyMessage(0);
                 EventBus.getDefault().post(userInfo);
                 break;
             case RequestCode.STOP:
                 handler.removeMessages(0);
-                callHandlerThread.quit();
+//                callHandlerThread.stop();
                 break;
             case RequestCode.BATTLE_START:
-                BattleInitInfo battleInitInfo = JsonUtils.fromJSON(BattleInitInfo.class, data);
-                EventBus.getDefault().postSticky(battleInitInfo);
+                battleInitInfo = JsonUtils.fromJSON(BattleInitInfo.class, data);
+//                callHandlerThread.start();
+                handler.sendEmptyMessage(0);
                 break;
             case RequestCode.GET_UPLOAD_PATH:
                 JSONObject jsonObject = new JSONObject(data);
                 if(jsonObject.has("uploadPath")){
                     RequestCode.UP_LOAD_PATH = jsonObject.getString("uploadPath");
                 }
-                break;
-            case RequestCode.BATTLE_DATA_BALL:
-                BattleBall infos = JsonUtils.fromJSON(BattleBall.class, data);
-                EventBus.getDefault().postSticky(infos);
                 break;
             case RequestCode.BATTLE_DATA_STICK:
                 ControlBarInfo barInfo = JsonUtils.fromJSON(ControlBarInfo.class, data);
@@ -109,18 +114,47 @@ public class NettyClientHandler extends ChannelHandlerAdapter {
                 break;
             case RequestCode.BATTLE_DATA_GET_PROP:
                 PropStatusInfo statusInfo = JsonUtils.fromJSON(PropStatusInfo.class, data);
+                statusInfo.setShow(true);
                 EventBus.getDefault().post(statusInfo);
+                break;
+            case RequestCode.BATTLE_DATA_PROP_END:
+                PropStatusInfo statusInfo1 = JsonUtils.fromJSON(PropStatusInfo.class, data);
+                statusInfo1.setShow(false);
+                EventBus.getDefault().post(statusInfo1);
                 break;
             case RequestCode.BATTLE_END:
                 BattleEndResponse endResponse = JsonUtils.fromJSON(BattleEndResponse.class, data);
                 GameResult result = new GameResult(endResponse.getWinId());
                 EventBus.getDefault().post(result);
+
+                if(handler.hasMessages(0)){ // 匹配过程中对方退了
+                    handler.removeMessages(0);
+                    EventBus.getDefault().register(this);
+                    msgData = new MsgData<String>();
+                    msgData.setCode(RequestCode.BATTLE_START);
+                    MySocket.getInstance().setMessage(msgData);
+                }
                 break;
             case RequestCode.FAILURE:
-                MsgData msgData = new MsgData();
+                msgData = new MsgData();
                 msgData.setCode(RequestCode.FAILURE);
                 msgData.setInfo(info);
                 EventBus.getDefault().post(msgData);
+                break;
+            case RequestCode.UDP_REQUEST_IP:
+                handler.removeMessages(0);
+                UDPPlayerInfoResponse response = JsonUtils.fromJSON(UDPPlayerInfoResponse.class,data);
+                MySocket.ip = response.getIp();
+                MySocket.port = response.getUdpPort();
+                if(battleInitInfo != null){
+                    EventBus.getDefault().postSticky(battleInitInfo);
+                }
+
+                MsgData<UDPPlayerInfoRequest> requestMsgData = new MsgData<>();
+                MySocket.getInstance().setUdpMessageToServer(requestMsgData);
+
+                Log.i("MySocket", " 自己获取:" + AppDeviceInfo.getIpAddress());
+                Log.i("MySocket", response.toString());
                 break;
             default:
                 Log.i(TAG,"未知消息号码:" + rev);

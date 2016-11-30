@@ -1,6 +1,7 @@
 package com.wangzhenfei.cocos2dgame.tool;
 
 import android.graphics.Bitmap;
+import android.graphics.Rect;
 import android.util.Log;
 
 import com.wangzhenfei.cocos2dgame.config.SpriteConfig;
@@ -30,7 +31,7 @@ public class SpriteUtils {
     }
 
     public static CCSprite getSprite(Bitmap bitmap,float w, float h, boolean resetAnchor, int tag){
-        CCSprite sprite = CCSprite.sprite(bitmap, tag + "");
+        CCSprite sprite = CCSprite.sprite(bitmap, System.currentTimeMillis() + "");
         sprite.setTag(tag);
         if(resetAnchor){
             sprite.setAnchorPoint(CGPoint.getZero());
@@ -43,12 +44,15 @@ public class SpriteUtils {
         return sprite;
     }
 
-    public static CGRect getSpriteRect(CCSprite sprite, int w, int h){
+    public static Rect getSpriteRect(CCSprite sprite, int w, int h){
         CGPoint point = sprite.getPosition();
-        CGRect rect = CGRect.make(point.x - w / 2 ,point.y - h / 2,
-                point.x +  w / 2 ,point.y + h / 2);
+        Rect rect = new Rect();
+        rect.set((int)(point.x - w / 2 ),(int)(point.y - h / 2),
+                (int)(point.x +  w / 2) ,(int)(point.y + h / 2));
         return rect;
     }
+
+
 
     public static boolean isSpriteConfict(CCSprite sprite1, int w1, int h1,CCSprite sprite2, int w2, int h2){
         CGPoint point1 = sprite1.getPosition();

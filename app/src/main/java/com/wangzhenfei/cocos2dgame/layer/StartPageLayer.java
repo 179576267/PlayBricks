@@ -77,8 +77,8 @@ public class StartPageLayer extends BaseCCLayer{
         CGPoint p1 = CGPoint.ccp(x, y);
         // 将以左上角为原点的坐标转换为以左下角为原点的坐标
         CGPoint p2 = CCDirector.sharedDirector().convertToGL(p1);
-        CGRect rect = SpriteUtils.getSpriteRect(startButtonUp, 334, 334);
-        if(rect.contains(p2.x, p2.y)){
+        Rect rect = SpriteUtils.getSpriteRect(startButtonUp, 334, 334);
+        if(rect.contains((int)p2.x, (int)p2.y)){
             startButtonUp.runAction(CCHide.action());
             startButtonDown.runAction(CCShow.action());
         }
@@ -95,8 +95,8 @@ public class StartPageLayer extends BaseCCLayer{
         CGPoint p1 = CGPoint.ccp(x, y);
         // 将以左上角为原点的坐标转换为以左下角为原点的坐标
         CGPoint p2 = CCDirector.sharedDirector().convertToGL(p1);
-        CGRect rect = SpriteUtils.getSpriteRect(startButtonUp, 334, 334);
-        if(rect.contains(p2.x, p2.y)){
+        Rect rect = SpriteUtils.getSpriteRect(startButtonUp, 334, 334);
+        if(rect.contains((int)p2.x, (int)p2.y)){
             if(SaveUserInfo.getInstance().getId() != 0){
                 goToNext();
             }else {

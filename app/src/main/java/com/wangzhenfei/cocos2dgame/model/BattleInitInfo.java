@@ -14,7 +14,7 @@ public class BattleInitInfo {
      * blockList : [{"id":101,"type":0,"propType":0},{"id":102,"type":0,"propType":0},{"id":103,"type":0,"propType":0},{"id":104,"type":0,"propType":0},{"id":105,"type":0,"propType":0},{"id":106,"type":0,"propType":0},{"id":107,"type":0,"propType":1},{"id":108,"type":0,"propType":0},{"id":109,"type":0,"propType":3},{"id":110,"type":0,"propType":2},{"id":111,"type":0,"propType":0},{"id":112,"type":0,"propType":0},{"id":113,"type":0,"propType":0},{"id":114,"type":0,"propType":0},{"id":100,"type":0,"propType":0}]
      */
 
-    private InitiativeUserBean initiativeUser;
+    private InitiativeUserBean initiativePlayer;
     /**
      * id : 1002
      * name : hoodle_1002
@@ -22,30 +22,39 @@ public class BattleInitInfo {
      * blockList : [{"id":201,"type":0,"propType":0},{"id":202,"type":0,"propType":0},{"id":203,"type":0,"propType":0},{"id":204,"type":0,"propType":0},{"id":205,"type":0,"propType":0},{"id":206,"type":0,"propType":0},{"id":207,"type":0,"propType":0},{"id":208,"type":0,"propType":0},{"id":209,"type":0,"propType":0},{"id":210,"type":0,"propType":2},{"id":211,"type":0,"propType":3},{"id":212,"type":0,"propType":0},{"id":213,"type":0,"propType":1},{"id":214,"type":0,"propType":0},{"id":200,"type":0,"propType":0}]
      */
 
-    private InitiativeUserBean passivityUser;
+    private InitiativeUserBean passivityPlayer;
 
-    public InitiativeUserBean getInitiativeUser() {
-        return initiativeUser;
+    private boolean isSameNet;
+
+    public boolean isSameNet() {
+        return isSameNet;
     }
 
-    public void setInitiativeUser(InitiativeUserBean initiativeUser) {
-        this.initiativeUser = initiativeUser;
+    public void setIsSameNet(boolean isSameNet) {
+        this.isSameNet = isSameNet;
     }
 
-    public InitiativeUserBean getPassivityUser() {
-        return passivityUser;
+    public InitiativeUserBean getInitiativePlayer() {
+        return initiativePlayer;
     }
 
-    public void setPassivityUser(InitiativeUserBean passivityUser) {
-        this.passivityUser = passivityUser;
+    public void setInitiativePlayer(InitiativeUserBean initiativePlayer) {
+        this.initiativePlayer = initiativePlayer;
+    }
+
+    public InitiativeUserBean getPassivityPlayer() {
+        return passivityPlayer;
+    }
+
+    public void setPassivityPlayer(InitiativeUserBean passivityPlayer) {
+        this.passivityPlayer = passivityPlayer;
     }
 
     public static class InitiativeUserBean {
         private int id;
         private String name;
         private String avatar = "app_logo.png";
-        private String ip;
-        private int udpPort;
+        private String udpNotifyIp;
         /**
          * id : 101
          * type : 0
@@ -54,20 +63,12 @@ public class BattleInitInfo {
 
         private List<BlockListBean> blockList;
 
-        public String getIp() {
-            return ip;
+        public String getUdpNotifyIp() {
+            return udpNotifyIp;
         }
 
-        public int getUdpPort() {
-            return udpPort;
-        }
-
-        public void setUdpPort(int udpPort) {
-            this.udpPort = udpPort;
-        }
-
-        public void setIp(String ip) {
-            this.ip = ip;
+        public void setUdpNotifyIp(String udpNotifyIp) {
+            this.udpNotifyIp = udpNotifyIp;
         }
 
         public int getId() {

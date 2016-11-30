@@ -2,6 +2,7 @@ package com.wangzhenfei.cocos2dgame.socket.netty;
 
 import android.util.Log;
 
+import com.wangzhenfei.cocos2dgame.model.BallAndBarPosition;
 import com.wangzhenfei.cocos2dgame.model.BattleBall;
 import com.wangzhenfei.cocos2dgame.model.BattleBrick;
 import com.wangzhenfei.cocos2dgame.model.BattleInitInfo;
@@ -94,7 +95,7 @@ public class MessageUDPServerHandler extends SimpleChannelInboundHandler<Datagra
         int code = -1 ;
         String data = null;
         if(json.has("code")){
-            code = json.getInt("code");
+            code = Integer.valueOf(json.getString("code"));
             data = json.getString("data");
         }
         switch (code){
@@ -103,8 +104,7 @@ public class MessageUDPServerHandler extends SimpleChannelInboundHandler<Datagra
                 EventBus.getDefault().postSticky(info);
                 break;
             case RequestCode.BATTLE_DATA_BALL:
-//                Log.i("cishutest","receiverTimes:" + (receiverTimes ++));
-                List<BattleBall> infos = JsonUtils.getListFromJSON(BattleBall.class, data);
+                BallAndBarPosition infos = JsonUtils.fromJSON(BallAndBarPosition.class, data);
                 EventBus.getDefault().postSticky(infos);
                 break;
             case RequestCode.BATTLE_DATA_STICK:

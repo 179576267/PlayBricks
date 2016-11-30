@@ -63,7 +63,7 @@ public class UdpDemo {
                         Log.i("UdpDemo", receiveMessage);
                         Log.i("UdpDemo","3. A接收数据1：" + packet.getAddress() + ":" + packet.getPort() + "内容：" + new String(packet.getData()));
                         Log.i("UdpDemo", "3. A接收数据2： " + receiveMessage);
-						/*int port = packet.getPort();
+						/*int port = packet.getUdpPort();
 						InetAddress address = packet.getAddress();*/
                         String reportMessage = "我是A，这是我发送的测试数据！";
 

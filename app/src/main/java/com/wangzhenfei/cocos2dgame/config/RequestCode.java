@@ -5,15 +5,16 @@ package com.wangzhenfei.cocos2dgame.config;
  * 请求参数
  */
 public class RequestCode {
-    public final static String IP = "192.168.2.121";
-//    public final static String IP = "182.254.247.160";
-//    public final static String IP = "114.95.157.185";
-    public final static int PORT = 2817;
+//    public final static String IP = "192.168.2.121";
+    public final static String IP = "182.254.247.160";
+//    public final static String IP = "114.95.246.9";
+    public final static int PORT = 28170;
 //    public final static int PORT = 9999;
 
-    public final static String UDP_IP = "192.168.2.121";
-//    public final static String UDP_IP = "182.254.247.160";
-    public final static int UDP_PORT = 2818;
+//    public final static String UDP_IP = "192.168.2.121";
+    public final static String UDP_IP = "182.254.247.160";
+//    public final static String UDP_IP = "114.95.246.9";
+    public final static int UDP_PORT = 28180;
 
     public final static String BASE_URL = "";
     public  static String UP_LOAD_PATH = "";
@@ -72,6 +73,11 @@ public class RequestCode {
      * 战斗数据(道具时间到期)
      */
     public final static int BATTLE_DATA_PROP_END = 3005;
+
+    /**
+     * 战斗数据(道具时间到期)
+     */
+    public final static int UDP_REQUEST_IP = 4001;
 
     /**
      * 失败
