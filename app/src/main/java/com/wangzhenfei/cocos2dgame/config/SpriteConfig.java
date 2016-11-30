@@ -27,5 +27,5 @@ public class SpriteConfig {
     public final static int PROP_SIZE = (int)(720 * 0.135);
 
     //全局的速度
-    public final static float v = 1f;//
+    public  final static float v = 0.5f;//
 }

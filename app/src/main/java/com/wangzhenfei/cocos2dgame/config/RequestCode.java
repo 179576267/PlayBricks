@@ -5,14 +5,14 @@ package com.wangzhenfei.cocos2dgame.config;
  * 请求参数
  */
 public class RequestCode {
-//    public final static String IP = "192.168.2.121";
-    public final static String IP = "182.254.247.160";
+    public final static String IP = "192.168.2.121";
+//    public final static String IP = "182.254.247.160";
 //    public final static String IP = "114.95.246.9";
     public final static int PORT = 28170;
 //    public final static int PORT = 9999;
 
-//    public final static String UDP_IP = "192.168.2.121";
-    public final static String UDP_IP = "182.254.247.160";
+    public final static String UDP_IP = "192.168.2.121";
+//    public final static String UDP_IP = "182.254.247.160";
 //    public final static String UDP_IP = "114.95.246.9";
     public final static int UDP_PORT = 28180;
 

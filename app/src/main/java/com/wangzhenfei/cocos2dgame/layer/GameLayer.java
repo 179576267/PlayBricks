@@ -83,6 +83,9 @@ public class GameLayer extends BaseCCLayer{
     private Bitmap mBitmap;
     private Bitmap oBitmap;
 
+    private long time;
+    private float v = SpriteConfig.v;
+
     public GameLayer(BattleInitInfo info) {
         super();
         SpriteConfig.CONTROL_BAR_W = SpriteConfig.NORMAL_CONTROL_BAR_W;
@@ -116,16 +119,25 @@ public class GameLayer extends BaseCCLayer{
                 Body bodyA = contact.getFixtureA().getBody();
                 if(bodyA != null && bodyA.getUserData() instanceof CCSprite){
                     spriteA = (CCSprite) bodyA.getUserData();
+                    if(balls.contains(spriteA.getTag())){
+                        // 发送球的位置
+                        sendBallLocation();
+                    }
                 }
                 CCSprite spriteB = null; //
                 Body bodyB = contact.getFixtureB().getBody();
                 if(bodyB != null && bodyB.getUserData() instanceof CCSprite){
                     spriteB = (CCSprite) bodyB.getUserData();
+                    if(balls.contains(spriteB.getTag())){
+                        // 发送球的位置
+                        sendBallLocation();
+                    }
                 }
                 if(bodyA != null && bodyB != null && spriteA != null && spriteB != null){ // 有效碰撞
                     Log.i(TAG, spriteA.getTag() + "----"+ spriteB.getTag());
                     // 有球的碰撞
                     if(balls.contains(spriteA.getTag()) ^ balls.contains(spriteB.getTag())){
+
                         if(balls.contains(spriteA.getTag())){
                             dealContact(bodyB, spriteB.getTag());
                         }else {
@@ -189,10 +201,6 @@ public class GameLayer extends BaseCCLayer{
         addSprite();
         schedule("startMinus", 1);
         uploadAvatar();
-
-        if(CCDirector.sharedDirector().getIsPaused()){
-
-        }
     }
 
     private void uploadAvatar() {
@@ -221,8 +229,8 @@ public class GameLayer extends BaseCCLayer{
                 bgNum.removeSelf();
             }
             Vector2 vector2 = new Vector2();
-            vector2.x = 20;
-            vector2.y = 20;
+            vector2.x = 10;
+            vector2.y = 10;
             ballBody.setLinearVelocity(vector2);
             start = true;
             unschedule("startMinus");
@@ -243,16 +251,14 @@ public class GameLayer extends BaseCCLayer{
         for(int i=0; i < balls.size(); i++){
             ball = (CCSprite) getChildByTag(balls.get(i));
             if(ball != null){
-                location = new Location(ball.getPosition().x / screenWith, ball.getPosition().y / screenHeight);
+                location = new Location(ball.getPosition().x / screenWith, ball.getPosition().y / screenHeight,
+                        ballBody.getLinearVelocity().x, ballBody.getLinearVelocity().y, ballBody.getAngle(), v);
                 list.add(new BattleBall(ball.getTag(), location));
             }
         }
         MsgData msgData = new MsgData();
         msgData.setCode(RequestCode.BATTLE_DATA_BALL);
-        BallAndBarPosition position = new BallAndBarPosition();
-        position.setData(list);
-        position.setPoleX(myControlBar.getPosition().x / screenWith);
-        msgData.setData(position);
+        msgData.setData(list);
         MySocket.getInstance().setUdpMessageToClient(msgData);
     }
 
@@ -386,29 +392,17 @@ public class GameLayer extends BaseCCLayer{
                     spProp = SpriteUtils.getSprite("marbles_prop_01.png",SpriteConfig.PROP_SIZE, SpriteConfig.PROP_SIZE,false, brick.getPropType());
                     spProp.setPosition(sprite.getPosition());
                     this.addChild(spProp);
-                }else if(brick.getPropType() == E_GameType.TRHEE_HOODLE.getCode()){
+                }
+                else if(brick.getPropType() == E_GameType.TRHEE_HOODLE.getCode()){
                     spProp = SpriteUtils.getSprite("marbles_prop_02.png",SpriteConfig.PROP_SIZE, SpriteConfig.PROP_SIZE,false, brick.getPropType());
                     spProp.setPosition(sprite.getPosition());
-                    this.addChild(spProp);
+//                    this.addChild(spProp);
                 }
             }
             else if(tag > 100){ // 自己的
                 int index = tag % 100 - 1;
                 CCSprite spProp;
                 brick = myBatter.getBlockList().get(index);
-                if(brick.getPropType() == E_GameType.ADD_SPEED.getCode()){
-//                    spProp = SpriteUtils.getSprite("marbles_prop_03.png",SpriteConfig.PROP_SIZE, SpriteConfig.PROP_SIZE,false, brick.getPropType());
-//                    spProp.setPosition(sprite.getPosition());
-//                    this.addChild(spProp);
-                }else if(brick.getPropType() == E_GameType.ADD_WIDTH.getCode()){
-//                    spProp = SpriteUtils.getSprite("marbles_prop_01.png",SpriteConfig.PROP_SIZE, SpriteConfig.PROP_SIZE,false, brick.getPropType());
-//                    spProp.setPosition(sprite.getPosition());
-//                    this.addChild(spProp);
-                }else if(brick.getPropType() == E_GameType.TRHEE_HOODLE.getCode()){
-//                    spProp = SpriteUtils.getSprite("marbles_prop_02.png",SpriteConfig.PROP_SIZE, SpriteConfig.PROP_SIZE,false, brick.getPropType());
-//                    spProp.setPosition(sprite.getPosition());
-//                    this.addChild(spProp);
-                }
             }
 
             MsgData msgData = new MsgData();
@@ -437,7 +431,6 @@ public class GameLayer extends BaseCCLayer{
         // from a pool and creates the ground box shape (also from a pool).
         // The body is also added to the world.
         Body groundBody = bxWorld.createBody(bxGroundBodyDef);
-
         // Define the ground box shape.
         EdgeShape groundBox = new EdgeShape();
 
@@ -726,16 +719,13 @@ public class GameLayer extends BaseCCLayer{
         if ((rdelta += delta) < FPS) return;
         if(addMoreBall){ // 增加来自对面多球的请求
             addMoreBall = false;
-            addBalls(SpriteConfig.TAG_ADD_BALL1, false);
-            addBalls(SpriteConfig.TAG_ADD_BALL2, false);
+//            addBalls(SpriteConfig.TAG_ADD_BALL1, false);
+//            addBalls(SpriteConfig.TAG_ADD_BALL2, false);
         }
-        // 发送球的位置
-        sendBallLocation();
-        Log.i(TAG, "start tick:" + delta);
-//        synchronized (bxWorld) {
+
+        synchronized (bxWorld) {
             bxWorld.step(FPS, 8, 1);
-//        }
-        Log.i(TAG, "end tick:" + delta);
+        }
         catchProp();
         rdelta = 0;
         // Iterate over the bodies in the physics world
@@ -750,12 +740,18 @@ public class GameLayer extends BaseCCLayer{
                 final Vector2 pos = b.getPosition();
                 if(balls.contains(sprite.getTag()) && start){ // 球的运动
                     Vector2 linearVelocity = b.getLinearVelocity();
-                    if(second == 59){
-                        linearVelocity.x *= (1 + 0.017);
-                        linearVelocity.y *= (1 + 0.017);
-                    }
+//                    if(second == 59){
+//                        v += 0.0136 * SpriteConfig.v ;
+//                    }
 
-                    sprite.setPosition(pos.x * PTM_RATIO, pos.y * PTM_RATIO);
+                    if(time != 0){
+                        long now = System.currentTimeMillis();
+                        CGPoint point = SpriteUtils.getNewPoint(sprite.getPosition(), linearVelocity.x, linearVelocity.y, (float) 1.0 * (now - time) / 1000, v);
+                        sprite.setPosition(point);
+                        b.setTransform(new Vector2(point.x / PTM_RATIO, point.y / PTM_RATIO), b.getAngle());
+                        time = now;
+                    }
+//                    sprite.setPosition(pos.x * PTM_RATIO, pos.y * PTM_RATIO);
                     if(Math.abs(linearVelocity.y) < 1){
                         if(sprite.getPosition().y > screenHeight / 2){
                             linearVelocity.y = -10;
@@ -772,12 +768,10 @@ public class GameLayer extends BaseCCLayer{
                         }
                     }
                     if(acclerate > 0){
-                        linearVelocity.x *= 2  ;
-                        linearVelocity.y *= 2;
+                        v *= 2;
                         acclerate = 0;
                     }else if(acclerate < 0){
-                        linearVelocity.x /= 2 ;
-                        linearVelocity.y /= 2 ;
+                        v /= 2;
                         acclerate = 0;
                     }
                     b.setLinearVelocity(linearVelocity);
@@ -786,6 +780,7 @@ public class GameLayer extends BaseCCLayer{
                 bxWorld.destroyBody(b);
             }
         }
+       time = System.currentTimeMillis();
     }
 
     /**
@@ -979,10 +974,7 @@ public class GameLayer extends BaseCCLayer{
             Vector2 vector2 = new Vector2(p2.x  / PTM_RATIO, (SpriteConfig.NORMAL_CONTROL_BAR_H / 2 + SpriteConfig.NORMAL_BRICK_SIZE * 3 + SpriteConfig.CONTROL_TO_BRICK)/ PTM_RATIO);
             myControlBarBody.setTransform(vector2, 0);
 
-//            MsgData msgData = new MsgData();
-//            msgData.setCode(RequestCode.BATTLE_DATA_STICK);
-//            msgData.setData(new ControlBarInfo(p2.x/screenWith));
-//            MySocket.getInstance().setUdpMessageToClient(msgData);
+            sendControlBarLocation();
         }
         return super.ccTouchesBegan(event);
     }
@@ -1011,10 +1003,7 @@ public class GameLayer extends BaseCCLayer{
             Vector2 vector2 = new Vector2(p2.x  / PTM_RATIO, (SpriteConfig.NORMAL_CONTROL_BAR_H / 2 + SpriteConfig.NORMAL_BRICK_SIZE * 3 + SpriteConfig.CONTROL_TO_BRICK)/ PTM_RATIO);
             myControlBarBody.setTransform(vector2, 0);
 
-//            MsgData msgData = new MsgData();
-//            msgData.setCode(RequestCode.BATTLE_DATA_STICK);
-//            msgData.setData(new ControlBarInfo(p2.x/screenWith));
-//            MySocket.getInstance().setUdpMessageToClient(msgData);
+            sendControlBarLocation();
         }
         return super.ccTouchesMoved(event);
     }
@@ -1045,6 +1034,17 @@ public class GameLayer extends BaseCCLayer{
     }
 
 
+    /**
+     * 发送杆子的位置
+     */
+    private void sendControlBarLocation() {
+        MsgData msgData = new MsgData();
+        msgData.setCode(RequestCode.BATTLE_DATA_STICK);
+        BallAndBarPosition position = new BallAndBarPosition();
+        position.setPoleX(myControlBar.getPosition().x / screenWith);
+        msgData.setData(position);
+        MySocket.getInstance().setUdpMessageToClient(msgData);
+    }
 
     //***********************************触摸事件********************************************************
 }

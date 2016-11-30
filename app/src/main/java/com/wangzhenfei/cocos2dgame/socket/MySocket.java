@@ -77,7 +77,6 @@ public class MySocket {
                 if(client == null){
                     try {
                         client = new DatagramSocket();
-//                        receive();
                     } catch (SocketException e) {
                         e.printStackTrace();
                     }
@@ -249,12 +248,12 @@ public class MySocket {
                                 EventBus.getDefault().postSticky(info);
                                 break;
                             case RequestCode.BATTLE_DATA_BALL:
-                                BallAndBarPosition infos = JsonUtils.fromJSON(BallAndBarPosition.class, data);
-                                EventBus.getDefault().postSticky(infos);
+                                List<BattleBall> list = JsonUtils.getListFromJSON(BattleBall.class, data);
+                                EventBus.getDefault().postSticky(list);
                                 break;
                             case RequestCode.BATTLE_DATA_STICK:
-                                ControlBarInfo barInfo = JsonUtils.fromJSON(ControlBarInfo.class, data);
-                                EventBus.getDefault().postSticky(barInfo);
+                                BallAndBarPosition barPosition = JsonUtils.fromJSON(BallAndBarPosition.class, data);
+                                EventBus.getDefault().postSticky(barPosition);
                                 break;
                             case RequestCode.BATTLE_DATA_BUMP:
                                 BattleBrick brick = JsonUtils.fromJSON(BattleBrick.class, data);

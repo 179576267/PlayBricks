@@ -61,15 +61,15 @@ public class SpriteUtils {
                 point2.x - w2 / 2,point2.y - h2 / 2 ,w2, h2);
     }
 
-    public static CGPoint getNewPoint(CGPoint point, float vX, float vY, float interval){
+    public static CGPoint getNewPoint(CGPoint point, float vX, float vY, float interval, float v){
 //        if(vX ==  0){
 //            vX = 10;
 //        }
 //        if(vY == 0){
 //            vY = 10;
 //        }
-        float x = (float)(vX * interval * SpriteConfig.v * 100 / Math.sqrt(vX * vX + vY * vY));
-        float y = (float)(vY * interval * SpriteConfig.v * 100 / Math.sqrt(vX * vX + vY * vY));
+        float x = (float)(vX * interval * v * 720 / Math.sqrt(vX * vX + vY * vY));
+        float y = (float)(vY * interval * v * 720 / Math.sqrt(vX * vX + vY * vY));
 //        if(x + point.x > 720 || y + point.y > 1280){
 //            return point;
 //        }
