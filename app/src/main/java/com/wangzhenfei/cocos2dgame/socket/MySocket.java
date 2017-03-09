@@ -246,19 +246,19 @@ public class MySocket {
                         switch (code){
                             case RequestCode.BATTLE_START:
                                 BattleInitInfo info = JsonUtils.fromJSON(BattleInitInfo.class, data);
-                                EventBus.getDefault().postSticky(info);
+                                EventBus.getDefault().post(info);
                                 break;
                             case RequestCode.BATTLE_DATA_BALL:
                                 BallAndBarPosition infos = JsonUtils.fromJSON(BallAndBarPosition.class, data);
-                                EventBus.getDefault().postSticky(infos);
+                                EventBus.getDefault().post(infos);
                                 break;
                             case RequestCode.BATTLE_DATA_STICK:
                                 ControlBarInfo barInfo = JsonUtils.fromJSON(ControlBarInfo.class, data);
-                                EventBus.getDefault().postSticky(barInfo);
+                                EventBus.getDefault().post(barInfo);
                                 break;
                             case RequestCode.BATTLE_DATA_BUMP:
                                 BattleBrick brick = JsonUtils.fromJSON(BattleBrick.class, data);
-                                EventBus.getDefault().postSticky(brick);
+                                EventBus.getDefault().post(brick);
                                 break;
                             default:
                                 Log.i(TAG,"返回错误:" + rec);

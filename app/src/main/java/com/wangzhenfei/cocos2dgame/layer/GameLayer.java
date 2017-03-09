@@ -221,8 +221,8 @@ public class GameLayer extends BaseCCLayer{
                 bgNum.removeSelf();
             }
             Vector2 vector2 = new Vector2();
-            vector2.x = 20;
-            vector2.y = 20;
+            vector2.x = 30;
+            vector2.y = 30;
             ballBody.setLinearVelocity(vector2);
             start = true;
             unschedule("startMinus");
@@ -270,16 +270,9 @@ public class GameLayer extends BaseCCLayer{
      * 球和杆子的位置回调
      * @param infos
      */
+    private BallAndBarPosition infos;
     public void onEvent( BallAndBarPosition infos) {
-        if(infos != null){
-            CGPoint position = offsetControlBar.getPosition();
-            position.x = (1 - infos.getPoleX()) * screenWith;
-            offsetControlBar.setPosition(position);
-            Vector2 vector2 = new Vector2(position.x  / PTM_RATIO,
-                    (screenHeight - (SpriteConfig.NORMAL_CONTROL_BAR_H / 2 + SpriteConfig.NORMAL_BRICK_SIZE * 3 + 2 * SpriteConfig.CONTROL_TO_BRICK))/ PTM_RATIO);
-            offsetControlBarBody.setTransform(vector2, 0);
-        }
-
+        this.infos = infos;
     }
 
     public void onEvent(ActivityLifeCycle cycle){
@@ -706,7 +699,7 @@ public class GameLayer extends BaseCCLayer{
             second  = 0;
         }
 
-        if(result != null ){
+        if(result != null ){// 游戏结果
             if(result.isWin()){
                 spEnd = SpriteUtils.getSprite("marbles_text_victory.png",screenWith, 300, false, -1);
                 spEnd.setPosition(CGPoint.ccp(screenWith / 2, screenHeight / 2));
@@ -721,6 +714,16 @@ public class GameLayer extends BaseCCLayer{
                 start = false;
             }
             start = false;
+        }
+
+        if(infos != null){ // 杆子位置
+            CGPoint position = offsetControlBar.getPosition();
+            position.x = (1 - infos.getPoleX()) * screenWith;
+            offsetControlBar.setPosition(position);
+            Vector2 vector2 = new Vector2(position.x  / PTM_RATIO,
+                    (screenHeight - (SpriteConfig.NORMAL_CONTROL_BAR_H / 2 + SpriteConfig.NORMAL_BRICK_SIZE * 3 + 2 * SpriteConfig.CONTROL_TO_BRICK))/ PTM_RATIO);
+            offsetControlBarBody.setTransform(vector2, 0);
+            infos = null;
         }
 
         if ((rdelta += delta) < FPS) return;
